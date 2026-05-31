@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Model files (large binaries)
+*.model
+
+# Run outputs
+*.traj
+*.csv
+*.png
+outputs.txt
+nebwalk-main.zip
+
+# Virtual environment
+venv/
