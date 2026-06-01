@@ -15,7 +15,7 @@ Minimal, correct Python implementation of the **Nudged Elastic Band (NEB)** meth
 - **IDPP interpolation** (Smidstrup et al. 2014) — chemically sensible initial paths, avoids atomic clashes in torsional reactions
 - **Minimum Image Convention (MIC)** — correct tangents and spring forces for periodic systems
 - **Variable spring constants** — energy-weighted springs concentrate images near the saddle point
-- **Parallel image evaluation** — thread-based, reduces wall time for expensive calculators (MACE, Egret-1t)
+- **Parallel image evaluation** — thread-based; beneficial for large supercells (>50 atoms) or GPU-accelerated MACE. Not recommended for small molecules on CPU where thread overhead dominates.
 - Energy profile plot, CSV export, ASE `.traj` output
 - Single `pip install .` — no compiled extensions
 
@@ -83,7 +83,7 @@ for img in images:
     )
 
 # n_workers=9: one thread per intermediate image
-# Egret-1t (PyTorch) releases the GIL → genuine parallel speedup
+# Use for large periodic systems (>50 atoms) or GPU; for small molecules on CPU, n_workers=1 is faster
 neb = NEB(images, k=0.1, k_min=0.033, climb=True, n_workers=9)
 neb.optimize(fmax=0.05)
 ```
@@ -235,10 +235,18 @@ independent — they do not communicate until spring forces are assembled.
 `nebwalk` exploits this with `concurrent.futures.ThreadPoolExecutor`.
 
 Threads are used (not processes) because pickling ASE calculator objects is
-unreliable across calculator types. PyTorch-based calculators (MACE, Egret-1t)
-release the GIL during C++ computation, so threads give genuine parallelism.
-Pure-Python calculators (EMT) see no speedup from threading but are not
-harmed by it.
+unreliable across calculator types.
+
+Measured on a 4-core CPU (WSL Ubuntu, Egret-1t, C2H6, 7 images):
+
+| Calculator | Sequential | Parallel (n_workers=7) | Speedup |
+|------------|------------|------------------------|---------|
+| EMT        | 17.1 ms    | 6.5 ms                 | 2.6×    |
+| Egret-1t   | 3.8 ms     | 8.3 ms                 | 0.45×   |
+
+For small molecules on CPU, per-image compute (~0.5 ms) is faster than thread
+overhead — use `n_workers=1`. Parallelism is beneficial when per-image compute
+is large: heavy MACE models, large supercells (>50 atoms), or GPU evaluation.
 
 ---
 
@@ -253,7 +261,7 @@ harmed by it.
 | `k_min` | None | Minimum spring constant for variable springs. `None` = uniform springs. Recommended: k / 3. |
 | `climb` | False | Enable CI-NEB |
 | `climb_delay` | 100 | FIRE steps before CI activates |
-| `n_workers` | 1 | Threads for parallel image evaluation. Set to n_images for maximum speedup with MACE/Egret-1t. |
+| `n_workers` | 1 | Threads for parallel image evaluation. Beneficial for large supercells (>50 atoms) or GPU-accelerated MACE. Use default (1) for small molecules on CPU. |
 
 **Methods:**
 
