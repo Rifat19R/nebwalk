@@ -22,3 +22,4 @@ examples/h_diffusion_pd_macemp.py
 examples/li_vacancy_macemp.py
 examples/test_idpp_ethane.py
 tests.yml
+benchmarks/scan_cyclohexane_pucker.py
