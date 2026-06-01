@@ -11,18 +11,6 @@ class NEB:
     """
     Nudged Elastic Band calculator.
 
-    Usage
-    -----
-    >>> from nebwalk import NEB, linear_interpolate
-    >>> from ase.calculators.emt import EMT
-    >>>
-    >>> images = linear_interpolate(start, end, n_images=7)
-    >>> for img in images:
-    ...     img.calc = EMT()
-    >>> neb = NEB(images, k=0.1, climb=True)
-    >>> neb.optimize(fmax=0.05)
-    >>> neb.plot("profile.png")
-
     Parameters
     ----------
     images : list of ase.Atoms
@@ -30,25 +18,33 @@ class NEB:
         Every image must have an ASE-compatible calculator attached.
     k : float
         Spring constant in eV/Å² (default 0.1).
-        For stiff bonds or wide barriers, values of 0.1–1.0 are typical.
-        Do NOT scale by number of images; k has the same physical meaning
-        regardless of path length.
+        With uniform springs: all springs use this value.
+        With variable springs (k_min set): this is the maximum value.
+    k_min : float or None
+        If given, activates energy-weighted variable spring constants.
+        Springs near the saddle point use ``k``; springs far from it use
+        ``k_min``. Recommended: k_min = k / 3.
+        If None (default), uniform springs are used.
     climb : bool
-        If True, activate climbing-image NEB (CI-NEB) after ``climb_delay``
-        steps.  CI-NEB drives the highest-energy image to the true saddle
-        point.  Do not activate on the first optimisation if the path is
-        far from converged.
+        If True, activate CI-NEB after ``climb_delay`` steps.
     climb_delay : int
         Number of FIRE steps before CI-NEB activates (default 100).
+    n_workers : int
+        Number of threads for parallel image evaluation (default 1).
+        Set to the number of intermediate images for maximum speedup.
+        Effective for calculators that release the GIL during computation
+        (MACE, MACE-MP-0, Egret-1t). No benefit for pure-Python calculators
+        (EMT) due to the Python GIL.
 
     Raises
     ------
     ValueError
-        If fewer than 3 images are provided, or if any image is missing a
-        calculator.
+        If fewer than 3 images are provided, any image is missing a
+        calculator, k_min >= k, or n_workers < 1.
     """
 
-    def __init__(self, images, k=0.1, climb=False, climb_delay=100):
+    def __init__(self, images, k=0.1, k_min=None, climb=False,
+                 climb_delay=100, n_workers=1):
         if len(images) < 3:
             raise ValueError(
                 f"Need at least 3 images (2 endpoints + ≥1 intermediate), "
@@ -57,18 +53,23 @@ class NEB:
         for i, img in enumerate(images):
             if img.calc is None:
                 raise ValueError(
-                    f"Image {i} has no calculator.  Attach one before "
-                    f"constructing NEB."
+                    f"Image {i} has no calculator. "
+                    f"Attach one before constructing NEB."
                 )
-        self.images = images
-        self.k = float(k)
-        self.climb = climb
-        self.climb_delay = int(climb_delay)
-        self.history = []
+        if k_min is not None and float(k_min) >= float(k):
+            raise ValueError(
+                f"k_min ({k_min}) must be strictly less than k ({k})."
+            )
+        if int(n_workers) < 1:
+            raise ValueError(f"n_workers must be >= 1, got {n_workers}.")
 
-    # ------------------------------------------------------------------
-    # Optimisation
-    # ------------------------------------------------------------------
+        self.images      = images
+        self.k           = float(k)
+        self.k_min       = float(k_min) if k_min is not None else None
+        self.climb       = climb
+        self.climb_delay = int(climb_delay)
+        self.n_workers   = int(n_workers)
+        self.history     = []
 
     def optimize(self, fmax=0.05, max_steps=500, verbose=True):
         """
@@ -77,8 +78,7 @@ class NEB:
         Parameters
         ----------
         fmax : float
-            Convergence criterion: maximum force component on any atom in
-            any movable image must be below ``fmax`` eV/Å.
+            Convergence criterion in eV/Å.
         max_steps : int
             Hard iteration limit.
         verbose : bool
@@ -95,37 +95,42 @@ class NEB:
             max_steps=max_steps,
             climb=self.climb,
             climb_delay=self.climb_delay,
+            k_min=self.k_min,
+            n_workers=self.n_workers,
             verbose=verbose,
         )
         self.history = history
         return converged
-
-    # ------------------------------------------------------------------
-    # Inspection
-    # ------------------------------------------------------------------
 
     def get_energies(self):
         """Return list of potential energies (eV) for all images."""
         return [img.get_potential_energy() for img in self.images]
 
     def get_barrier(self):
-        """
-        Return forward activation barrier in eV (relative to image 0).
-
-        Returns
-        -------
-        Ea : float
-        """
+        """Return forward activation barrier in eV (relative to image 0)."""
         e = self.get_energies()
         return max(e) - e[0]
 
-    # ------------------------------------------------------------------
-    # Output
-    # ------------------------------------------------------------------
+    def get_spring_constants(self):
+        """
+        Return the current spring constants as an ndarray of shape (N-1,).
+
+        With uniform springs, all values equal self.k.
+        With variable springs, values reflect the current energy profile.
+        """
+        import numpy as np
+        from .forces import variable_spring_constants
+        energies = self.get_energies()
+        if self.k_min is not None:
+            return variable_spring_constants(
+                energies, k_max=self.k, k_min=self.k_min
+            )
+        return np.full(len(self.images) - 1, self.k)
 
     def plot(self, filename="neb_profile.png", show=False, title=None):
         """Plot and save the energy profile."""
-        plot_energy_profile(self.images, filename=filename, show=show, title=title)
+        plot_energy_profile(self.images, filename=filename,
+                            show=show, title=title)
 
     def save_csv(self, filename="neb_profile.csv"):
         """Write energies to CSV."""

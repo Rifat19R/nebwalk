@@ -13,9 +13,7 @@ idpp_interpolate
     weighted pairwise distance objective to produce a chemically sensible
     initial path. Recommended for organic molecules and any system where
     linear interpolation produces steric clashes.
-
-    Note: PBC support for IDPP is not yet implemented. Use linear_interpolate
-    for periodic systems until MIC support is added in a future release.
+    Supports PBC via the minimum image convention.
 
 Reference for IDPP:
     Smidstrup, Pedersen, Stokbro, Jónsson,
@@ -92,7 +90,7 @@ def linear_interpolate(start, end, n_images):
 
 def _pairwise(positions):
     """
-    Compute pairwise difference vectors and distances.
+    Pairwise difference vectors and distances (non-periodic).
 
     Returns
     -------
@@ -104,7 +102,29 @@ def _pairwise(positions):
     return diff, dist
 
 
-def _idpp_obj_and_grad(flat_pos, n_atoms, d_target, weights):
+def _pairwise_mic(positions, cell, pbc):
+    """
+    MIC-aware pairwise difference vectors and distances for periodic systems.
+
+    Applies find_mic to all (N*N) displacement vectors in a single batch
+    call — no Python loops over pairs.
+
+    Returns
+    -------
+    diff : (N, N, 3)  MIC displacement diff[i, j] = mic(r_i - r_j)
+    dist : (N, N)     MIC distances; diagonal is 0.0
+    """
+    n = len(positions)
+    diff_raw = positions[:, None, :] - positions[None, :, :]   # (N, N, 3)
+
+    # Batch MIC: reshape to (N², 3), apply find_mic, reshape back
+    diff_mic_flat, _ = find_mic(diff_raw.reshape(-1, 3), cell, pbc)
+    diff = diff_mic_flat.reshape(n, n, 3)
+    dist = np.sqrt((diff ** 2).sum(axis=-1))
+    return diff, dist
+
+
+def _idpp_obj_and_grad(flat_pos, n_atoms, d_target, weights, cell=None, pbc=None):
     """
     IDPP objective and analytical gradient for one image.
 
@@ -113,9 +133,11 @@ def _idpp_obj_and_grad(flat_pos, n_atoms, d_target, weights):
           = 0.5 * sum_{i != j} w_ij * (d_ij - d_target_ij)^2
 
     Gradient (analytical, accounting for both (i,j) and (j,i) contributions):
-        dS/dr_k = 2 * sum_{j != k} w_kj * delta_kj / d_kj * (r_k - r_j)
+        dS/dr_k = 2 * sum_{j != k} w_kj * delta_kj / d_kj * mic(r_k - r_j)
 
-    where delta_ij = d_ij - d_target_ij.
+    For periodic systems, raw displacements are replaced by MIC displacements.
+    The MIC image of a pair does not change under the small perturbations used
+    by L-BFGS-B, so the gradient formula is identical to the non-periodic case.
 
     Parameters
     ----------
@@ -123,6 +145,8 @@ def _idpp_obj_and_grad(flat_pos, n_atoms, d_target, weights):
     n_atoms  : int
     d_target : (N, N) target distance matrix (fixed throughout)
     weights  : (N, N) = 1/d_target^4, zeros on diagonal
+    cell     : ase.cell.Cell or (3, 3) array, optional
+    pbc      : (3,) bool array, optional
 
     Returns
     -------
@@ -130,20 +154,20 @@ def _idpp_obj_and_grad(flat_pos, n_atoms, d_target, weights):
     grad : (3N,)
     """
     positions = flat_pos.reshape(n_atoms, 3)
-    diff, dist = _pairwise(positions)
 
-    # Avoid division by zero on diagonal (diagonal is excluded via weights=0)
+    use_mic = (cell is not None) and (pbc is not None) and np.any(pbc)
+    if use_mic:
+        diff, dist = _pairwise_mic(positions, cell, pbc)
+    else:
+        diff, dist = _pairwise(positions)
+
     dist_safe = np.where(dist > 1e-12, dist, 1.0)
+    delta = dist - d_target
 
-    delta = dist - d_target                                    # (N, N)
-
-    # Objective: upper-triangle sum = 0.5 * full symmetric sum
-    obj = 0.5 * np.sum(weights * delta ** 2)
-
-    # Gradient: both (k,j) and (j,k) terms contribute equally → factor of 2
-    factor = 2.0 * weights * delta / dist_safe                # (N, N)
+    obj    = 0.5 * np.sum(weights * delta ** 2)
+    factor = 2.0 * weights * delta / dist_safe
     np.fill_diagonal(factor, 0.0)
-    grad = np.einsum('ij,ijk->ik', factor, diff)              # (N, 3)
+    grad   = np.einsum('ij,ijk->ik', factor, diff)
 
     return obj, grad.ravel()
 
@@ -161,14 +185,17 @@ def idpp_interpolate(start, end, n_images, max_iter=500, tol=1e-6):
     Recommended whenever the reaction involves significant torsional motion
     or risk of atomic overlap along a linear path.
 
+    Supports periodic boundary conditions via the minimum image convention.
+
     Algorithm
     ---------
-    1. Generate linearly interpolated starting positions for each image.
+    1. Generate linearly interpolated starting positions for each image
+       (MIC-aware for periodic systems).
     2. For image k, define target pairwise distances by linear interpolation
-       between the endpoint distance matrices:
+       between the endpoint MIC distance matrices:
            d_target[k] = d_start + (k / (N-1)) * (d_end - d_start)
     3. Optimise each image independently (L-BFGS-B) to minimise the IDPP
-       objective — a 1/d^4-weighted sum of squared distance deviations.
+       objective using MIC distances where PBC is active.
     4. Endpoints are returned as copies of start/end and are never moved.
 
     Parameters
@@ -181,8 +208,6 @@ def idpp_interpolate(start, end, n_images, max_iter=500, tol=1e-6):
         Number of intermediate images (excluding endpoints).
     max_iter : int
         Maximum L-BFGS-B iterations per image (default 500).
-        L-BFGS-B is appropriate here — the IDPP objective IS a conservative
-        potential, unlike the NEB force field.
     tol : float
         Convergence tolerance for L-BFGS-B (default 1e-6).
 
@@ -196,14 +221,6 @@ def idpp_interpolate(start, end, n_images, max_iter=500, tol=1e-6):
     ValueError
         If start and end have different numbers of atoms or species,
         or if n_images < 1.
-    NotImplementedError
-        If start has periodic boundary conditions (PBC). Use
-        linear_interpolate for periodic systems.
-
-    Notes
-    -----
-    PBC support is not yet implemented for IDPP. This will be added
-    alongside minimum image convention (MIC) support in a future release.
     """
     if len(start) != len(end):
         raise ValueError(
@@ -216,28 +233,29 @@ def idpp_interpolate(start, end, n_images, max_iter=500, tol=1e-6):
         )
     if n_images < 1:
         raise ValueError("n_images must be >= 1.")
-    if np.any(start.pbc):
-        raise NotImplementedError(
-            "IDPP interpolation does not yet support periodic boundary conditions. "
-            "Use linear_interpolate for periodic systems."
-        )
 
-    n_total = n_images + 2
-    n_atoms = len(start)
+    n_total  = n_images + 2
+    n_atoms  = len(start)
+    use_mic  = bool(np.any(start.pbc))
+    cell     = start.cell if use_mic else None
+    pbc      = start.pbc  if use_mic else None
 
-    # Step 1: linear starting guess (re-use existing function)
+    # Step 1: linear starting guess (MIC-aware via linear_interpolate)
     images = linear_interpolate(start, end, n_images)
 
     # Step 2: endpoint pairwise distance matrices
-    _, d_start = _pairwise(start.positions)
-    _, d_end   = _pairwise(end.positions)
+    if use_mic:
+        _, d_start = _pairwise_mic(start.positions, cell, pbc)
+        _, d_end   = _pairwise_mic(end.positions,   cell, pbc)
+    else:
+        _, d_start = _pairwise(start.positions)
+        _, d_end   = _pairwise(end.positions)
 
     # Step 3: optimise each intermediate image independently
     for k in range(1, n_total - 1):
         alpha    = k / (n_total - 1)
         d_target = d_start + alpha * (d_end - d_start)
 
-        # Weights: 1/d_target^4; zero on diagonal and for zero-distance pairs
         with np.errstate(divide='ignore', invalid='ignore'):
             weights = np.where(d_target > 1e-10,
                                1.0 / d_target ** 4,
@@ -249,7 +267,7 @@ def idpp_interpolate(start, end, n_images, max_iter=500, tol=1e-6):
         result = minimize(
             _idpp_obj_and_grad,
             x0,
-            args=(n_atoms, d_target, weights),
+            args=(n_atoms, d_target, weights, cell, pbc),
             method='L-BFGS-B',
             jac=True,
             options={'maxiter': max_iter,
