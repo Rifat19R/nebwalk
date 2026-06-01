@@ -17,3 +17,8 @@ nebwalk-main.zip
 venv/
 MENTOR_CLAUDE_v2.md
 EGRET_1T.model
+examples/cu_vacancy_macemp.py
+examples/h_diffusion_pd_macemp.py
+examples/li_vacancy_macemp.py
+examples/test_idpp_ethane.py
+tests.yml
