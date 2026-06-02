@@ -209,7 +209,7 @@ def fire_optimize(
             f[j][~free_masks[j]] = 0.0
             v[j][~free_masks[j]] = 0.0
 
-        fmax_curr = float(np.max(np.abs(f)))
+        fmax_curr = float(np.sqrt((f**2).sum(axis=-1)).max())
         k_springs = k_curr if use_variable_k else np.full(len(images) - 1, k)
         history.append({
             'step':     step,
