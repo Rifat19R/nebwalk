@@ -24,3 +24,7 @@ examples/test_idpp_ethane.py
 tests.yml
 benchmarks/scan_cyclohexane_pucker.py
 examples/butane_egret.py
+calculators/
+nebwalk_project_summary.md
+examples/ethane_egret1t.py
+MENTOR_CLAUDE_v2.md
