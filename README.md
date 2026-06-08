@@ -27,15 +27,14 @@ validated result in the repo and the best lead example for outreach.
 - **Parallel image evaluation** — thread-based; beneficial for large supercells (>50 atoms) or GPU-accelerated MACE. Not recommended for small molecules on CPU where thread overhead dominates.
 - Energy profile plot, CSV export, ASE `.traj` output
 - Restart from ASE `.traj` with fresh calculator factories
-- Local editable install — no compiled extensions. PyPI release is pending.
+- Install via PyPI or local editable install. No compiled extensions.
 
 ---
 
 ## Installation
 
 ```bash
-# PyPI release pending: pip install nebwalk is not available yet.
-pip install .
+pip install nebwalk
 # or, for development:
 pip install -e ".[test]"
 ```
@@ -400,8 +399,7 @@ itself converged cleanly in 60 steps — the error is from the calculator.
 
 ## Release status
 
-GitHub source install is ready. PyPI package name `nebwalk` is not published
-yet, so `pip install nebwalk` will fail until the first PyPI release is made.
+`pip install nebwalk` is available on PyPI. For development install: `pip install -e .`
 The next release target is `v0.5.0`.
 
 Quantum ESPRESSO example support is documented in `examples/al_diffusion_qe.py`.
