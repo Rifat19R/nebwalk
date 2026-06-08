@@ -286,9 +286,12 @@ is large: heavy MACE models, large supercells (>50 atoms), or GPU evaluation.
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `optimize(fmax=0.05, max_steps=500, verbose=True)` | `bool` | Run FIRE. Returns True if converged. |
+| `run(fmax=0.05, max_steps=500, verbose=True)` | `bool` | Alias for `optimize`; convenient for restarted runs. |
 | `run(fmax=0.05, max_steps=500, verbose=True)` | `bool` | Alias for `optimize`, convenient for restarted runs. |
 | `get_energies()` | `list[float]` | Potential energies for all images (eV) |
 | `get_barrier()` | `float` | Forward barrier relative to image 0 (eV) |
+| `get_reverse_barrier()` | `float` | Reverse barrier relative to final image (eV). |
+| `get_reaction_energy()` | `float` | E[final] − E[initial] in eV. Negative = exothermic. |
 | `get_reverse_barrier()` | `float` | Reverse barrier relative to final image (eV). |
 | `get_reaction_energy()` | `float` | Final minus initial energy (eV). |
 | `get_spring_constants()` | `ndarray` | Current spring constants, shape (N-1,) |
