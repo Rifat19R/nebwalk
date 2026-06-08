@@ -176,6 +176,58 @@ def _repulsion_obj_and_grad(
     return float(obj), grad
 
 
+def _fallback_direction(i: int, j: int) -> FloatArray:
+    """Return a deterministic unit vector for exactly overlapping atoms."""
+    directions = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 1.0, 0.0],
+            [1.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0],
+        ],
+        dtype=float,
+    )
+    direction = directions[(i + 3 * j) % len(directions)]
+    return direction / np.linalg.norm(direction)
+
+
+def _separate_overlaps(
+    positions: FloatArray,
+    min_distance: float,
+    cell: ArrayLike | None,
+    pbc: ArrayLike | None,
+    n_passes: int = 10,
+) -> FloatArray:
+    """Precondition a path image by separating severe pair overlaps."""
+    pos = np.array(positions, dtype=float, copy=True)
+    for _ in range(n_passes):
+        use_mic = cell is not None and pbc is not None and np.any(pbc)
+        if use_mic:
+            diff, dist = _pairwise_mic(pos, cell, pbc)
+        else:
+            diff, dist = _pairwise(pos)
+
+        moved = False
+        for i in range(len(pos)):
+            for j in range(i + 1, len(pos)):
+                d = float(dist[i, j])
+                if d >= min_distance:
+                    continue
+                if d < 1e-12:
+                    direction = _fallback_direction(i, j)
+                else:
+                    direction = diff[i, j] / d
+                shift = 0.5 * (min_distance - d + 1e-6) * direction
+                pos[i] += shift
+                pos[j] -= shift
+                moved = True
+        if not moved:
+            break
+    return pos
+
+
 def _geodesic_obj_and_grad(
     flat_pos: ArrayLike,
     n_atoms: int,
@@ -220,9 +272,15 @@ def geodesic_interpolate(
         alpha = k / (n_total - 1)
         d_target = d_start + alpha * (d_end - d_start)
         weights = _idpp_weights(d_target)
+        x0 = _separate_overlaps(
+            images[k].positions,
+            min_distance=min_distance,
+            cell=cell,
+            pbc=pbc,
+        ).ravel()
         result = minimize(
             _geodesic_obj_and_grad,
-            images[k].positions.ravel().copy(),
+            x0,
             args=(
                 n_atoms,
                 d_target,

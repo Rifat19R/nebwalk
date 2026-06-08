@@ -8,7 +8,7 @@ from .interpolate import geodesic_interpolate, idpp_interpolate, linear_interpol
 from .neb import NEB
 from .output import plot_energy_profile, save_csv, save_trajectory
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     "NEB",

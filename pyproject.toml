@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "nebwalk"
-version = "0.4.0"
+version = "0.5.0"
 description = "Minimal Nudged Elastic Band (NEB) implementation for ASE-compatible calculators"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Md. Rifat Khandaker" }
 ]
@@ -18,14 +19,27 @@ dependencies = [
     "scipy>=1.7",
     "matplotlib>=3.5",
 ]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+]
 
 [project.optional-dependencies]
 mace = ["mace-torch>=0.3"]
 test = ["pytest>=7", "numpy"]
-dev = ["nebwalk[test]", "ruff", "mypy"]
+dev = ["nebwalk[test]", "build", "mypy", "ruff", "twine"]
 
 [project.urls]
+Homepage = "https://github.com/Rifat19R/nebwalk"
 Repository = "https://github.com/Rifat19R/nebwalk"
+Issues = "https://github.com/Rifat19R/nebwalk/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
