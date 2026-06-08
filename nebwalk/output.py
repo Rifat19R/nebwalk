@@ -1,33 +1,29 @@
-"""
-Output utilities: energy profile plot, CSV export, ASE trajectory writer.
-"""
+"""Output utilities for energy profiles and trajectories."""
 
-import numpy as np
+from __future__ import annotations
+
+import logging
+from collections.abc import Sequence
+
 import matplotlib.pyplot as plt
+import numpy as np
+from ase import Atoms
 from ase.io import write
 
+logger = logging.getLogger(__name__)
 
-def plot_energy_profile(images, filename="neb_profile.png", show=False, title=None):
-    """
-    Plot the NEB energy profile and save to file.
 
-    Parameters
-    ----------
-    images : list of ase.Atoms
-        All NEB images (including endpoints).
-    filename : str
-        Output file path (.png, .pdf, .svg are all supported by matplotlib).
-    show : bool
-        If True, call ``plt.show()`` after saving.
-    title : str or None
-        Plot title.  Defaults to "NEB Energy Profile".
-    """
-    energies = np.array([img.get_potential_energy() for img in images])
+def plot_energy_profile(
+    images: Sequence[Atoms],
+    filename: str = "neb_profile.png",
+    show: bool = False,
+    title: str | None = None,
+) -> None:
+    """Plot the NEB energy profile and save it to disk."""
+    energies = np.array([img.get_potential_energy() for img in images], dtype=float)
     energies_rel = energies - energies[0]
 
-    n = len(energies)
-    x = np.linspace(0, 1, n)
-
+    x = np.linspace(0, 1, len(energies))
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.plot(x, energies_rel, "o-", color="royalblue", lw=2, ms=7, zorder=3)
     ax.axhline(0, color="gray", lw=0.5, ls="--")
@@ -36,60 +32,40 @@ def plot_energy_profile(images, filename="neb_profile.png", show=False, title=No
     ax.set_title(title or "NEB Energy Profile")
     ax.grid(True, alpha=0.25)
 
-    # Annotate forward and reverse barriers
     i_max = int(np.argmax(energies_rel))
-    Ea_fwd = float(energies_rel[i_max])
-    Ea_rev = float(Ea_fwd - energies_rel[-1])
-
+    ea_fwd = float(energies_rel[i_max])
     ax.annotate(
-        f"$E_a$ = {Ea_fwd:.3f} eV",
-        xy=(x[i_max], Ea_fwd),
+        f"$E_a$ = {ea_fwd:.3f} eV",
+        xy=(x[i_max], ea_fwd),
         xytext=(0.60, 0.75),
         textcoords="axes fraction",
-        arrowprops=dict(arrowstyle="->", color="firebrick"),
+        arrowprops={"arrowstyle": "->", "color": "firebrick"},
         color="firebrick",
         fontsize=10,
     )
 
     plt.tight_layout()
     plt.savefig(filename, dpi=150)
-    print(f"Profile saved → {filename}")
+    logger.info("Profile saved to %s", filename)
     if show:
         plt.show()
     plt.close(fig)
 
 
-def save_csv(images, filename="neb_profile.csv"):
-    """
-    Write image index, absolute energy, and relative energy to CSV.
-
-    Parameters
-    ----------
-    images : list of ase.Atoms
-    filename : str
-    """
-    energies = np.array([img.get_potential_energy() for img in images])
+def save_csv(images: Sequence[Atoms], filename: str = "neb_profile.csv") -> None:
+    """Write image index, absolute energy, and relative energy to CSV."""
+    energies = np.array([img.get_potential_energy() for img in images], dtype=float)
     energies_rel = energies - energies[0]
 
-    with open(filename, "w") as fh:
-        fh.write("image,energy_eV,relative_energy_eV\n")
-        for i, (e, er) in enumerate(zip(energies, energies_rel)):
-            fh.write(f"{i},{e:.8f},{er:.8f}\n")
+    with open(filename, "w", encoding="utf-8") as file:
+        file.write("image,energy_eV,relative_energy_eV\n")
+        for i, (energy, rel_energy) in enumerate(zip(energies, energies_rel)):
+            file.write(f"{i},{energy:.8f},{rel_energy:.8f}\n")
 
-    print(f"Energies saved → {filename}")
+    logger.info("Energies saved to %s", filename)
 
 
-def save_trajectory(images, filename="neb.traj"):
-    """
-    Write all images to an ASE trajectory file.
-
-    Can be viewed with ``ase gui neb.traj`` or read back with
-    ``ase.io.read('neb.traj', index=':')``.
-
-    Parameters
-    ----------
-    images : list of ase.Atoms
-    filename : str
-    """
+def save_trajectory(images: Sequence[Atoms], filename: str = "neb.traj") -> None:
+    """Write all images to an ASE trajectory file."""
     write(filename, images)
-    print(f"Trajectory saved → {filename}")
+    logger.info("Trajectory saved to %s", filename)

@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 from ase import Atoms
-from nebwalk.interpolate import linear_interpolate
+from nebwalk.interpolate import geodesic_interpolate, linear_interpolate
 
 
 def _make_endpoints(n_atoms=3, shift=2.0):
@@ -87,3 +87,12 @@ def test_no_calculator_attached():
     images = linear_interpolate(start, end, n_images=3)
     for i, img in enumerate(images):
         assert img.calc is None, f"Image {i} unexpectedly has a calculator"
+
+
+def test_geodesic_interpolate_length_and_endpoints():
+    start = Atoms("H2", positions=[[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]])
+    end = Atoms("H2", positions=[[1.0, 0.0, 0.0], [1.74, 0.0, 0.0]])
+    images = geodesic_interpolate(start, end, n_images=3, max_iter=20)
+    assert len(images) == 5
+    np.testing.assert_allclose(images[0].positions, start.positions)
+    np.testing.assert_allclose(images[-1].positions, end.positions)

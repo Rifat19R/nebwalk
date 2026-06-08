@@ -8,6 +8,7 @@ All shape checks and physics invariants are tested analytically.
 import numpy as np
 import pytest
 from ase import Atoms
+from nebwalk import NEB
 from nebwalk.forces import compute_neb_forces, _improved_tangent
 
 
@@ -71,6 +72,30 @@ def test_force_array_shape():
     forces = compute_neb_forces(images, k=0.1)
     for i, f in enumerate(forces):
         assert f.shape == (1, 3), f"Image {i}: expected (1, 3), got {f.shape}"
+
+
+def test_missing_calculator_raises_clear_error():
+    images = _make_images(5)
+    images[2].calc = None
+    with pytest.raises(ValueError, match="no calculator"):
+        compute_neb_forces(images, k=0.1)
+
+
+def test_shared_calculator_raises_clear_error():
+    images = _make_images(5)
+    shared_calc = MockCalculator(0.0, [[0.0, 0.0, 0.0]])
+    images[1].calc = shared_calc
+    images[2].calc = shared_calc
+    with pytest.raises(ValueError, match="same calculator instance"):
+        compute_neb_forces(images, k=0.1)
+
+
+def test_neb_band_properties():
+    images = _make_images(5, e_profile=[0.0, 0.2, 1.0, 0.3, -0.1])
+    neb = NEB(images)
+    assert neb.get_barrier() == pytest.approx(1.0)
+    assert neb.get_reverse_barrier() == pytest.approx(1.1)
+    assert neb.get_reaction_energy() == pytest.approx(-0.1)
 
 
 # ---------------------------------------------------------------------------

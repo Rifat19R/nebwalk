@@ -1,5 +1,9 @@
 # nebwalk
 
+![CI](https://github.com/Rifat19R/nebwalk/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.9%20%7C%203.11%20%7C%203.12-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 Minimal, correct Python implementation of the **Nudged Elastic Band (NEB)** method for finding minimum energy paths (MEPs) and transition states. Works with any ASE-compatible calculator — EMT for testing, [Egret-1](https://rowansci.com) or MACE-MP-0 for production.
 
 **GitHub:** [github.com/Rifat19R/nebwalk](https://github.com/Rifat19R/nebwalk)
@@ -210,7 +214,7 @@ image to the true saddle point.
 ### Convergence criterion
 
 ```
-max |F_NEB|_component < fmax   (eV/Å, default 0.05)
+max per-atom |F_NEB| < fmax   (eV/Å, default 0.05)
 ```
 
 ---

@@ -20,8 +20,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=7"]
 mace = ["mace-torch>=0.3"]
+test = ["pytest>=7", "numpy"]
+dev = ["nebwalk[test]", "ruff", "mypy"]
 
 [project.urls]
 Repository = "https://github.com/Rifat19R/nebwalk"
@@ -32,3 +33,14 @@ include = ["nebwalk*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["nebwalk"]

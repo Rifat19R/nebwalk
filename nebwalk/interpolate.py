@@ -1,61 +1,17 @@
-"""
-Path interpolation utilities for NEB.
+"""Path interpolation utilities for NEB."""
 
-Two methods are provided:
-
-linear_interpolate
-    Cartesian linear interpolation. Fast but unsuitable for paths involving
-    large rotations or torsional motion — atoms may pass through each other.
-    Supports PBC via the minimum image convention.
-
-idpp_interpolate
-    Image Dependent Pair Potential (IDPP) interpolation. Minimises a
-    weighted pairwise distance objective to produce a chemically sensible
-    initial path. Recommended for organic molecules and any system where
-    linear interpolation produces steric clashes.
-    Supports PBC via the minimum image convention.
-
-Reference for IDPP:
-    Smidstrup, Pedersen, Stokbro, Jónsson,
-    J. Chem. Phys. 141, 214106 (2014). DOI: 10.1063/1.4878664
-"""
+from __future__ import annotations
 
 import numpy as np
-from scipy.optimize import minimize
+from ase import Atoms
 from ase.geometry import find_mic
+from numpy.typing import ArrayLike, NDArray
+from scipy.optimize import minimize
+
+FloatArray = NDArray[np.float64]
 
 
-# ---------------------------------------------------------------------------
-# Linear interpolation (MIC-aware, unchanged)
-# ---------------------------------------------------------------------------
-
-def linear_interpolate(start, end, n_images):
-    """
-    Create linearly interpolated images between start and end.
-
-    The calculator is NOT copied to intermediate images; attach one before
-    calling ``NEB.optimize()``.
-
-    Parameters
-    ----------
-    start : ase.Atoms
-        Initial state (endpoint, not modified).
-    end : ase.Atoms
-        Final state (endpoint, not modified).
-    n_images : int
-        Number of intermediate images (excluding endpoints).
-        Total path length will be n_images + 2.
-
-    Returns
-    -------
-    images : list of ase.Atoms, length n_images + 2
-        [start_copy, img_1, ..., img_n, end_copy].
-
-    Raises
-    ------
-    ValueError
-        If start and end have different numbers of atoms or species.
-    """
+def _validate_endpoints(start: Atoms, end: Atoms, n_images: int) -> None:
     if len(start) != len(end):
         raise ValueError(
             f"start and end must have the same number of atoms "
@@ -68,12 +24,16 @@ def linear_interpolate(start, end, n_images):
     if n_images < 1:
         raise ValueError("n_images must be >= 1.")
 
+
+def linear_interpolate(start: Atoms, end: Atoms, n_images: int) -> list[Atoms]:
+    """Create MIC-aware Cartesian linear interpolation between endpoints."""
+    _validate_endpoints(start, end, n_images)
+
     dr_total = end.positions - start.positions
     if np.any(start.pbc):
         dr_total, _ = find_mic(dr_total, start.cell, start.pbc)
 
     images = [start.copy()]
-
     for m in range(1, n_images + 1):
         alpha = m / (n_images + 1)
         img = start.copy()
@@ -84,78 +44,41 @@ def linear_interpolate(start, end, n_images):
     return images
 
 
-# ---------------------------------------------------------------------------
-# IDPP helpers (private)
-# ---------------------------------------------------------------------------
-
-def _pairwise(positions):
-    """
-    Pairwise difference vectors and distances (non-periodic).
-
-    Returns
-    -------
-    diff : (N, N, 3)  diff[i, j] = positions[i] - positions[j]
-    dist : (N, N)     Euclidean distances; diagonal is 0.0
-    """
-    diff = positions[:, None, :] - positions[None, :, :]   # (N, N, 3)
-    dist = np.sqrt((diff ** 2).sum(axis=-1))               # (N, N)
+def _pairwise(positions: ArrayLike) -> tuple[FloatArray, FloatArray]:
+    """Return pairwise difference vectors and distances."""
+    pos = np.asarray(positions, dtype=float)
+    diff = pos[:, None, :] - pos[None, :, :]
+    dist = np.sqrt((diff**2).sum(axis=-1))
     return diff, dist
 
 
-def _pairwise_mic(positions, cell, pbc):
-    """
-    MIC-aware pairwise difference vectors and distances for periodic systems.
-
-    Applies find_mic to all (N*N) displacement vectors in a single batch
-    call — no Python loops over pairs.
-
-    Returns
-    -------
-    diff : (N, N, 3)  MIC displacement diff[i, j] = mic(r_i - r_j)
-    dist : (N, N)     MIC distances; diagonal is 0.0
-    """
-    n = len(positions)
-    diff_raw = positions[:, None, :] - positions[None, :, :]   # (N, N, 3)
-
-    # Batch MIC: reshape to (N², 3), apply find_mic, reshape back
+def _pairwise_mic(
+    positions: ArrayLike,
+    cell: ArrayLike,
+    pbc: ArrayLike,
+) -> tuple[FloatArray, FloatArray]:
+    """Return MIC-aware pairwise difference vectors and distances."""
+    pos = np.asarray(positions, dtype=float)
+    n_atoms = len(pos)
+    diff_raw = pos[:, None, :] - pos[None, :, :]
     diff_mic_flat, _ = find_mic(diff_raw.reshape(-1, 3), cell, pbc)
-    diff = diff_mic_flat.reshape(n, n, 3)
-    dist = np.sqrt((diff ** 2).sum(axis=-1))
+    diff = np.asarray(diff_mic_flat, dtype=float).reshape(n_atoms, n_atoms, 3)
+    dist = np.sqrt((diff**2).sum(axis=-1))
     return diff, dist
 
 
-def _idpp_obj_and_grad(flat_pos, n_atoms, d_target, weights, cell=None, pbc=None):
-    """
-    IDPP objective and analytical gradient for one image.
+def _idpp_obj_and_grad(
+    flat_pos: ArrayLike,
+    n_atoms: int,
+    d_target: FloatArray,
+    weights: FloatArray,
+    cell: ArrayLike | None = None,
+    pbc: ArrayLike | None = None,
+) -> tuple[float, FloatArray]:
+    """Return IDPP objective and analytical gradient for one image."""
+    positions = np.asarray(flat_pos, dtype=float).reshape(n_atoms, 3)
 
-    Objective (Smidstrup et al., eq. 2):
-        S = sum_{i<j} w_ij * (d_ij - d_target_ij)^2
-          = 0.5 * sum_{i != j} w_ij * (d_ij - d_target_ij)^2
-
-    Gradient (analytical, accounting for both (i,j) and (j,i) contributions):
-        dS/dr_k = 2 * sum_{j != k} w_kj * delta_kj / d_kj * mic(r_k - r_j)
-
-    For periodic systems, raw displacements are replaced by MIC displacements.
-    The MIC image of a pair does not change under the small perturbations used
-    by L-BFGS-B, so the gradient formula is identical to the non-periodic case.
-
-    Parameters
-    ----------
-    flat_pos : (3N,) current atomic positions
-    n_atoms  : int
-    d_target : (N, N) target distance matrix (fixed throughout)
-    weights  : (N, N) = 1/d_target^4, zeros on diagonal
-    cell     : ase.cell.Cell or (3, 3) array, optional
-    pbc      : (3,) bool array, optional
-
-    Returns
-    -------
-    obj  : float
-    grad : (3N,)
-    """
-    positions = flat_pos.reshape(n_atoms, 3)
-
-    use_mic = (cell is not None) and (pbc is not None) and np.any(pbc)
+    use_mic = cell is not None and pbc is not None and np.any(pbc)
     if use_mic:
         diff, dist = _pairwise_mic(positions, cell, pbc)
     else:
@@ -164,117 +87,155 @@ def _idpp_obj_and_grad(flat_pos, n_atoms, d_target, weights, cell=None, pbc=None
     dist_safe = np.where(dist > 1e-12, dist, 1.0)
     delta = dist - d_target
 
-    obj    = 0.5 * np.sum(weights * delta ** 2)
+    obj = 0.5 * np.sum(weights * delta**2)
     factor = 2.0 * weights * delta / dist_safe
     np.fill_diagonal(factor, 0.0)
-    grad   = np.einsum('ij,ijk->ik', factor, diff)
+    grad = np.einsum("ij,ijk->ik", factor, diff)
+    return float(obj), grad.ravel()
 
-    return obj, grad.ravel()
 
-
-# ---------------------------------------------------------------------------
-# IDPP interpolation (public)
-# ---------------------------------------------------------------------------
-
-def idpp_interpolate(start, end, n_images, max_iter=500, tol=1e-6):
-    """
-    IDPP interpolation between start and end.
-
-    Generates a smoother, more chemically sensible initial path than linear
-    interpolation by preserving pairwise distance structure across images.
-    Recommended whenever the reaction involves significant torsional motion
-    or risk of atomic overlap along a linear path.
-
-    Supports periodic boundary conditions via the minimum image convention.
-
-    Algorithm
-    ---------
-    1. Generate linearly interpolated starting positions for each image
-       (MIC-aware for periodic systems).
-    2. For image k, define target pairwise distances by linear interpolation
-       between the endpoint MIC distance matrices:
-           d_target[k] = d_start + (k / (N-1)) * (d_end - d_start)
-    3. Optimise each image independently (L-BFGS-B) to minimise the IDPP
-       objective using MIC distances where PBC is active.
-    4. Endpoints are returned as copies of start/end and are never moved.
-
-    Parameters
-    ----------
-    start : ase.Atoms
-        Initial state (endpoint, not modified).
-    end : ase.Atoms
-        Final state (endpoint, not modified).
-    n_images : int
-        Number of intermediate images (excluding endpoints).
-    max_iter : int
-        Maximum L-BFGS-B iterations per image (default 500).
-    tol : float
-        Convergence tolerance for L-BFGS-B (default 1e-6).
-
-    Returns
-    -------
-    images : list of ase.Atoms, length n_images + 2
-        No calculator is attached to any image.
-
-    Raises
-    ------
-    ValueError
-        If start and end have different numbers of atoms or species,
-        or if n_images < 1.
-    """
-    if len(start) != len(end):
-        raise ValueError(
-            f"start and end must have the same number of atoms "
-            f"({len(start)} vs {len(end)})."
-        )
-    if list(start.symbols) != list(end.symbols):
-        raise ValueError(
-            "start and end must have the same atomic species in the same order."
-        )
-    if n_images < 1:
-        raise ValueError("n_images must be >= 1.")
-
-    n_total  = n_images + 2
-    n_atoms  = len(start)
-    use_mic  = bool(np.any(start.pbc))
-    cell     = start.cell if use_mic else None
-    pbc      = start.pbc  if use_mic else None
-
-    # Step 1: linear starting guess (MIC-aware via linear_interpolate)
-    images = linear_interpolate(start, end, n_images)
-
-    # Step 2: endpoint pairwise distance matrices
+def _endpoint_distances(start: Atoms, end: Atoms) -> tuple[FloatArray, FloatArray]:
+    use_mic = bool(np.any(start.pbc))
     if use_mic:
-        _, d_start = _pairwise_mic(start.positions, cell, pbc)
-        _, d_end   = _pairwise_mic(end.positions,   cell, pbc)
+        _, d_start = _pairwise_mic(start.positions, start.cell, start.pbc)
+        _, d_end = _pairwise_mic(end.positions, start.cell, start.pbc)
     else:
         _, d_start = _pairwise(start.positions)
-        _, d_end   = _pairwise(end.positions)
+        _, d_end = _pairwise(end.positions)
+    return d_start, d_end
 
-    # Step 3: optimise each intermediate image independently
+
+def _idpp_weights(d_target: FloatArray) -> FloatArray:
+    with np.errstate(divide="ignore", invalid="ignore"):
+        weights = np.where(d_target > 1e-10, 1.0 / d_target**4, 0.0)
+    np.fill_diagonal(weights, 0.0)
+    return weights
+
+
+def idpp_interpolate(
+    start: Atoms,
+    end: Atoms,
+    n_images: int,
+    max_iter: int = 500,
+    tol: float = 1e-6,
+) -> list[Atoms]:
+    """Image Dependent Pair Potential interpolation."""
+    _validate_endpoints(start, end, n_images)
+
+    n_total = n_images + 2
+    n_atoms = len(start)
+    use_mic = bool(np.any(start.pbc))
+    cell = start.cell if use_mic else None
+    pbc = start.pbc if use_mic else None
+    images = linear_interpolate(start, end, n_images)
+    d_start, d_end = _endpoint_distances(start, end)
+
     for k in range(1, n_total - 1):
-        alpha    = k / (n_total - 1)
+        alpha = k / (n_total - 1)
         d_target = d_start + alpha * (d_end - d_start)
-
-        with np.errstate(divide='ignore', invalid='ignore'):
-            weights = np.where(d_target > 1e-10,
-                               1.0 / d_target ** 4,
-                               0.0)
-        np.fill_diagonal(weights, 0.0)
-
-        x0 = images[k].positions.ravel().copy()
-
+        weights = _idpp_weights(d_target)
         result = minimize(
             _idpp_obj_and_grad,
-            x0,
+            images[k].positions.ravel().copy(),
             args=(n_atoms, d_target, weights, cell, pbc),
-            method='L-BFGS-B',
+            method="L-BFGS-B",
             jac=True,
-            options={'maxiter': max_iter,
-                     'ftol': tol,
-                     'gtol': tol},
+            options={"maxiter": max_iter, "ftol": tol, "gtol": tol},
         )
+        images[k].set_positions(result.x.reshape(n_atoms, 3))
 
+    return images
+
+
+def _repulsion_obj_and_grad(
+    positions: FloatArray,
+    min_distance: float,
+    cell: ArrayLike | None,
+    pbc: ArrayLike | None,
+) -> tuple[float, FloatArray]:
+    use_mic = cell is not None and pbc is not None and np.any(pbc)
+    if use_mic:
+        diff, dist = _pairwise_mic(positions, cell, pbc)
+    else:
+        diff, dist = _pairwise(positions)
+
+    n_atoms = len(positions)
+    grad = np.zeros_like(positions, dtype=float)
+    obj = 0.0
+    for i in range(n_atoms):
+        for j in range(i + 1, n_atoms):
+            d = float(dist[i, j])
+            if d < 1e-12 or d >= min_distance:
+                continue
+            overlap = (min_distance - d) / min_distance
+            obj += overlap**4
+            coeff = -4.0 * overlap**3 / (min_distance * d)
+            g = coeff * diff[i, j]
+            grad[i] += g
+            grad[j] -= g
+    return float(obj), grad
+
+
+def _geodesic_obj_and_grad(
+    flat_pos: ArrayLike,
+    n_atoms: int,
+    d_target: FloatArray,
+    weights: FloatArray,
+    min_distance: float,
+    repulsion_strength: float,
+    cell: ArrayLike | None = None,
+    pbc: ArrayLike | None = None,
+) -> tuple[float, FloatArray]:
+    idpp_obj, idpp_grad = _idpp_obj_and_grad(
+        flat_pos, n_atoms, d_target, weights, cell=cell, pbc=pbc
+    )
+    positions = np.asarray(flat_pos, dtype=float).reshape(n_atoms, 3)
+    rep_obj, rep_grad = _repulsion_obj_and_grad(positions, min_distance, cell, pbc)
+    obj = idpp_obj + repulsion_strength * rep_obj
+    grad = idpp_grad + repulsion_strength * rep_grad.ravel()
+    return float(obj), grad
+
+
+def geodesic_interpolate(
+    start: Atoms,
+    end: Atoms,
+    n_images: int,
+    max_iter: int = 500,
+    tol: float = 1e-6,
+    min_distance: float = 0.75,
+    repulsion_strength: float = 10.0,
+) -> list[Atoms]:
+    """Approximate geodesic interpolation with IDPP plus overlap repulsion."""
+    _validate_endpoints(start, end, n_images)
+
+    n_total = n_images + 2
+    n_atoms = len(start)
+    use_mic = bool(np.any(start.pbc))
+    cell = start.cell if use_mic else None
+    pbc = start.pbc if use_mic else None
+    images = linear_interpolate(start, end, n_images)
+    d_start, d_end = _endpoint_distances(start, end)
+
+    for k in range(1, n_total - 1):
+        alpha = k / (n_total - 1)
+        d_target = d_start + alpha * (d_end - d_start)
+        weights = _idpp_weights(d_target)
+        result = minimize(
+            _geodesic_obj_and_grad,
+            images[k].positions.ravel().copy(),
+            args=(
+                n_atoms,
+                d_target,
+                weights,
+                min_distance,
+                repulsion_strength,
+                cell,
+                pbc,
+            ),
+            method="L-BFGS-B",
+            jac=True,
+            options={"maxiter": max_iter, "ftol": tol, "gtol": tol},
+        )
         images[k].set_positions(result.x.reshape(n_atoms, 3))
 
     return images
