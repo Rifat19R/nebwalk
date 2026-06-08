@@ -1,6 +1,6 @@
 # nebwalk
 
-![CI](https://github.com/Rifat19R/nebwalk/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/Rifat19R/nebwalk/actions/workflows/ci.yml/badge.svg)](https://github.com/Rifat19R/nebwalk/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.9%20%7C%203.11%20%7C%203.12-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -21,13 +21,14 @@ Minimal, correct Python implementation of the **Nudged Elastic Band (NEB)** meth
 - **Variable spring constants** — energy-weighted springs concentrate images near the saddle point
 - **Parallel image evaluation** — thread-based; beneficial for large supercells (>50 atoms) or GPU-accelerated MACE. Not recommended for small molecules on CPU where thread overhead dominates.
 - Energy profile plot, CSV export, ASE `.traj` output
-- Single `pip install .` — no compiled extensions
+- Local editable install — no compiled extensions. PyPI release is pending.
 
 ---
 
 ## Installation
 
 ```bash
+# PyPI release pending: pip install nebwalk is not available yet.
 pip install .
 # or, for development:
 pip install -e ".[test]"
@@ -315,8 +316,8 @@ pip install -e ".[test]"
 pytest tests/ -v
 ```
 
-Current suite: **68 tests** across forces, interpolation, MIC, variable
-springs, and parallel evaluation.
+Current suite: **74 tests** across forces, interpolation, MIC, variable
+springs, parallel evaluation, restart helpers, and the shared engine.
 
 ---
 
