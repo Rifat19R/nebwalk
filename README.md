@@ -1,16 +1,12 @@
 # nebwalk
 
-[![CI](https://github.com/Rifat19R/nebwalk/actions/workflows/ci.yml/badge.svg)](https://github.com/Rifat19R/nebwalk/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.9%20%7C%203.11%20%7C%203.12-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![CI](https://github.com/Rifat19R/nebwalk/actions/workflows/ci.yml/badge.svg)](https://github.com/Rifat19R/nebwalk/actions/workflows/ci.yml/badge.svg)
+[![Python](https://img.shields.io/badge/python-3.9%20%7C%203.11%20%7C%203.12-blue)](https://img.shields.io/badge/python-3.9%20%7C%203.11%20%7C%203.12-blue)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://img.shields.io/badge/license-MIT-green)
 
 Minimal, correct Python implementation of the **Nudged Elastic Band (NEB)** method for finding minimum energy paths (MEPs) and transition states. Works with any ASE-compatible calculator — EMT for testing, [Egret-1](https://rowansci.com) or MACE-MP-0 for production.
 
 **GitHub:** [github.com/Rifat19R/nebwalk](https://github.com/Rifat19R/nebwalk)
-
-**Result spotlight:** HCP Mg vacancy migration with MACE-MP-0 gives **0.508 eV**
-against **~0.52 eV DFT-PBE** (about **2% error**). This is the cleanest
-validated result in the repo and the best lead example for outreach.
 
 ---
 
@@ -21,27 +17,26 @@ validated result in the repo and the best lead example for outreach.
 - Climbing Image NEB (CI-NEB) for true saddle-point location
 - **FIRE optimizer** — robust to the non-conservative NEB force field
 - **IDPP interpolation** (Smidstrup et al. 2014) — chemically sensible initial paths, avoids atomic clashes in torsional reactions
-- **Regularized geodesic-style interpolation** - IDPP plus short-range repulsion for severe atom-overlap paths
 - **Minimum Image Convention (MIC)** — correct tangents and spring forces for periodic systems
 - **Variable spring constants** — energy-weighted springs concentrate images near the saddle point
+- **High-level API** (`run_neb_calculation`) — single function call with calculator factory pattern; handles interpolation, calculator attachment, and NEB in one step
 - **Parallel image evaluation** — thread-based; beneficial for large supercells (>50 atoms) or GPU-accelerated MACE. Not recommended for small molecules on CPU where thread overhead dominates.
 - Energy profile plot, CSV export, ASE `.traj` output
-- Restart from ASE `.traj` with fresh calculator factories
-- Install via PyPI or local editable install. No compiled extensions.
+- Single `pip install .` — no compiled extensions
 
 ---
 
 ## Installation
 
-```bash
-pip install nebwalk
+```
+pip install .
 # or, for development:
 pip install -e ".[test]"
 ```
 
 For Egret-1 / MACE support:
 
-```bash
+```
 pip install -e ".[mace]"
 ```
 
@@ -77,6 +72,47 @@ Visualise the trajectory: `ase gui path.traj`
 
 ---
 
+## High-level API (run_neb_calculation)
+
+`run_neb_calculation` wraps interpolation, calculator attachment, and NEB optimisation
+into a single function call. Use this when you want a clean interface that handles the
+boilerplate — particularly useful for periodic systems where each image needs an
+independent calculator instance.
+
+```python
+from ase.calculators.emt import EMT
+from nebwalk import run_neb_calculation, NEBRunConfig
+
+initial = ...   # ase.Atoms, relaxed
+final   = ...   # ase.Atoms, relaxed
+
+config = NEBRunConfig(
+    n_images  = 7,
+    climb     = True,
+    k         = 0.1,
+    k_min     = 0.033,
+    fmax      = 0.05,
+)
+
+result = run_neb_calculation(
+    initial            = initial,
+    final              = final,
+    calculator_factory = lambda: EMT(),   # called once per image
+    config             = config,
+)
+
+print(f"Converged : {result.converged}")
+print(f"Barrier   : {result.barrier:.3f} eV")
+result.neb.plot("profile.png")
+result.neb.save_trajectory("path.traj")
+```
+
+The `calculator_factory` must be a zero-argument callable that returns a fresh,
+independent calculator. This is required because each image must own its own
+calculator instance — sharing a single calculator causes ASE cache corruption.
+
+---
+
 ## With Egret-1t (MACE) + parallel evaluation
 
 ```python
@@ -100,8 +136,7 @@ neb.optimize(fmax=0.05)
 
 > **Note:** Egret-1 does not compute stress/virial; only atomic forces are needed
 > for NEB, so this is fine.
-> The model file is not distributed with this repository. Download it from
-> [rowansci.com](https://rowansci.com).
+> The model file is not distributed with this repository. Download it from [rowansci.com](https://rowansci.com).
 
 ---
 
@@ -152,25 +187,18 @@ Both methods support PBC via the minimum image convention.
 Reference: Smidstrup, Pedersen, Stokbro, Jónsson, J. Chem. Phys. **141**,
 214106 (2014). DOI: [10.1063/1.4878664](https://doi.org/10.1063/1.4878664)
 
-**Regularized geodesic-style interpolation** (`geodesic_interpolate`) is a self-contained
-regularized IDPP approximation. It starts from the MIC-aware Cartesian path,
-separates exact atom overlaps deterministically, and optimizes an IDPP objective
-with a short-range repulsive penalty. This is not a full redundant-internal
-coordinate implementation of Zhu et al.; it is a robust, dependency-free first
-line of defense against pathological Cartesian paths.
-
 ---
 
 ### Tangent estimate (improved, Henkelman & Jónsson 2000)
 
 Let τ⁺ = R_{i+1} − Rᵢ and τ⁻ = Rᵢ − R_{i-1}.
 
-| Condition | Tangent |
-|-----------|---------|
-| E_{i+1} > Eᵢ > E_{i-1} | τ⁺ / \|τ⁺\| |
-| E_{i-1} > Eᵢ > E_{i+1} | τ⁻ / \|τ⁻\| |
-| Local extremum (E_{i+1} ≥ E_{i-1}) | (τ⁺ ΔE_max + τ⁻ ΔE_min) normalised |
-| Local extremum (E_{i-1} > E_{i+1}) | (τ⁺ ΔE_min + τ⁻ ΔE_max) normalised |
+| Condition                            | Tangent                              |
+| ------------------------------------ | ------------------------------------ |
+| E\_{i+1} > Eᵢ > E\_{i-1}             | τ⁺ / \|τ⁺\|                          |
+| E\_{i-1} > Eᵢ > E\_{i+1}             | τ⁻ / \|τ⁻\|                          |
+| Local extremum (E\_{i+1} ≥ E\_{i-1}) | (τ⁺ ΔE\_max + τ⁻ ΔE\_min) normalised |
+| Local extremum (E\_{i-1} > E\_{i+1}) | (τ⁺ ΔE\_min + τ⁻ ΔE\_max) normalised |
 
 where ΔE_max = max(|E_{i+1}−Eᵢ|, |E_{i-1}−Eᵢ|) and ΔE_min = min(…).
 For periodic systems, τ⁺ and τ⁻ use MIC displacements.
@@ -248,18 +276,17 @@ DOI: [10.1103/PhysRevLett.97.170201](https://doi.org/10.1103/PhysRevLett.97.1702
 ### Parallel image evaluation
 
 At each FIRE step, energy and forces for all intermediate images are
-independent — they do not communicate until spring forces are assembled.
-`nebwalk` exploits this with `concurrent.futures.ThreadPoolExecutor`.
+independent — they do not communicate until spring forces are assembled. `nebwalk` exploits this with `concurrent.futures.ThreadPoolExecutor`.
 
 Threads are used (not processes) because pickling ASE calculator objects is
 unreliable across calculator types.
 
 Measured on a 4-core CPU (WSL Ubuntu, Egret-1t, C2H6, 7 images):
 
-| Calculator | Sequential | Parallel (n_workers=7) | Speedup |
-|------------|------------|------------------------|---------|
-| EMT        | 17.1 ms    | 6.5 ms                 | 2.6×    |
-| Egret-1t   | 3.8 ms     | 8.3 ms                 | 0.45×   |
+| Calculator | Sequential | Parallel (n\_workers=7) | Speedup |
+| ---------- | ---------- | ----------------------- | ------- |
+| EMT        | 17.1 ms    | 6.5 ms                  | 2.6×    |
+| Egret-1t   | 3.8 ms     | 8.3 ms                  | 0.45×   |
 
 For small molecules on CPU, per-image compute (~0.5 ms) is faster than thread
 overhead — use `n_workers=1`. Parallelism is beneficial when per-image compute
@@ -271,32 +298,117 @@ is large: heavy MACE models, large supercells (>50 atoms), or GPU evaluation.
 
 ### `NEB(images, k=0.1, k_min=None, climb=False, climb_delay=100, n_workers=1)`
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `images` | — | List of `ase.Atoms`, all with calculators attached |
-| `k` | 0.1 | Spring constant (eV/Å²). With variable springs: maximum value. |
-| `k_min` | None | Minimum spring constant for variable springs. `None` = uniform springs. Recommended: k / 3. |
-| `climb` | False | Enable CI-NEB |
-| `climb_delay` | 100 | FIRE steps before CI activates |
-| `n_workers` | 1 | Threads for parallel image evaluation. Beneficial for large supercells (>50 atoms) or GPU-accelerated MACE. Use default (1) for small molecules on CPU. |
+| Parameter     | Default | Description                                                                                                                                             |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `images`      | —       | List of `ase.Atoms`, all with calculators attached                                                                                                      |
+| `k`           | 0.1     | Spring constant (eV/Å²). With variable springs: maximum value.                                                                                          |
+| `k_min`       | None    | Minimum spring constant for variable springs. `None` = uniform springs. Recommended: k / 3.                                                             |
+| `climb`       | False   | Enable CI-NEB                                                                                                                                           |
+| `climb_delay` | 100     | FIRE steps before CI activates                                                                                                                          |
+| `n_workers`   | 1       | Threads for parallel image evaluation. Beneficial for large supercells (>50 atoms) or GPU-accelerated MACE. Use default (1) for small molecules on CPU. |
 
 **Methods:**
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `optimize(fmax=0.05, max_steps=500, verbose=True)` | `bool` | Run FIRE. Returns True if converged. |
-| `run(fmax=0.05, max_steps=500, verbose=True)` | `bool` | Alias for `optimize`; convenient for restarted runs. |
-| `run(fmax=0.05, max_steps=500, verbose=True)` | `bool` | Alias for `optimize`, convenient for restarted runs. |
-| `get_energies()` | `list[float]` | Potential energies for all images (eV) |
-| `get_barrier()` | `float` | Forward barrier relative to image 0 (eV) |
-| `get_reverse_barrier()` | `float` | Reverse barrier relative to final image (eV). |
-| `get_reaction_energy()` | `float` | E[final] − E[initial] in eV. Negative = exothermic. |
-| `get_reverse_barrier()` | `float` | Reverse barrier relative to final image (eV). |
-| `get_reaction_energy()` | `float` | Final minus initial energy (eV). |
-| `get_spring_constants()` | `ndarray` | Current spring constants, shape (N-1,) |
-| `plot(filename, show, title)` | — | Save energy profile plot |
-| `save_csv(filename)` | — | Write energies to CSV |
-| `save_trajectory(filename)` | — | Write all images to ASE `.traj` |
+| Method                                             | Returns       | Description                               |
+| -------------------------------------------------- | ------------- | ----------------------------------------- |
+| `optimize(fmax=0.05, max_steps=500, verbose=True)` | `bool`        | Run FIRE. Returns True if converged.      |
+| `get_energies()`                                   | `list[float]` | Potential energies for all images (eV)    |
+| `get_barrier()`                                    | `float`       | Forward barrier relative to image 0 (eV) |
+| `get_spring_constants()`                           | `ndarray`     | Current spring constants, shape (N-1,)    |
+| `plot(filename, show, title)`                      | —             | Save energy profile plot                  |
+| `save_csv(filename)`                               | —             | Write energies to CSV                     |
+| `save_trajectory(filename)`                        | —             | Write all images to ASE `.traj`           |
+
+---
+
+### `NEBRunConfig`
+
+Configuration dataclass for `run_neb_calculation`. All parameters have defaults;
+construct with only the values you want to override.
+
+```python
+from nebwalk import NEBRunConfig
+
+config = NEBRunConfig(
+    n_images      = 7,
+    interpolation = "idpp",
+    k             = 0.1,
+    k_min         = None,
+    climb         = False,
+    climb_delay   = 100,
+    n_workers     = 1,
+    fmax          = 0.05,
+    max_steps     = 500,
+    verbose       = True,
+)
+```
+
+| Parameter       | Type            | Default   | Description                                                                                          |
+| --------------- | --------------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `n_images`      | `int`           | `7`       | Number of intermediate images (endpoints excluded)                                                   |
+| `interpolation` | `str`           | `"idpp"`  | `"linear"` or `"idpp"`. IDPP recommended for torsional reactions and systems with atomic overlap risk |
+| `k`             | `float`         | `0.1`     | Spring constant (eV/Å²). With variable springs: maximum value.                                       |
+| `k_min`         | `float \| None` | `None`    | Minimum spring constant for variable springs. `None` = uniform springs. Recommended: `k / 3`.        |
+| `climb`         | `bool`          | `False`   | Enable CI-NEB for true saddle-point location                                                         |
+| `climb_delay`   | `int`           | `100`     | FIRE steps before the climbing image activates                                                       |
+| `n_workers`     | `int`           | `1`       | Threads for parallel image evaluation. Use `1` for small molecules on CPU.                           |
+| `fmax`          | `float`         | `0.05`    | Convergence criterion: max per-atom force magnitude (eV/Å)                                           |
+| `max_steps`     | `int`           | `500`     | Maximum FIRE steps before giving up                                                                  |
+| `verbose`       | `bool`          | `True`    | Print per-step progress                                                                              |
+
+---
+
+### `run_neb_calculation(initial, final, calculator_factory, config=None, prepare_images=None)`
+
+High-level NEB runner. Handles interpolation, calculator attachment, and optimisation.
+Returns a `NEBRunResult`.
+
+| Parameter            | Type                              | Description                                                                                                                                    |
+| -------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `initial`            | `Atoms`                           | Relaxed initial state. No calculator required.                                                                                                 |
+| `final`              | `Atoms`                           | Relaxed final state. No calculator required.                                                                                                   |
+| `calculator_factory` | `Callable[[], Any]`               | Zero-argument callable that returns a fresh calculator. Called once per image. **Must return independent instances** — sharing causes ASE cache corruption. |
+| `config`             | `NEBRunConfig \| None`            | Configuration object. `None` = default `NEBRunConfig()`.                                                                                       |
+| `prepare_images`     | `Callable[[list[Atoms]], None] \| None` | Optional hook called on all images (including endpoints) after interpolation, before NEB starts. Use to apply constraints or custom per-image setup. |
+
+**Example with MACE-MP-0 and constraints:**
+
+```python
+from ase.constraints import FixAtoms
+from mace.calculators import mace_mp
+from nebwalk import run_neb_calculation, NEBRunConfig
+
+def make_calc():
+    return mace_mp(model="small", dispersion=False, default_dtype="float64")
+
+def fix_bottom_layer(images):
+    for img in images:
+        img.set_constraint(FixAtoms(mask=[...]))
+
+config = NEBRunConfig(n_images=7, climb=True, k=0.1, k_min=0.033)
+
+result = run_neb_calculation(
+    initial            = initial,
+    final              = final,
+    calculator_factory = make_calc,
+    config             = config,
+    prepare_images     = fix_bottom_layer,
+)
+```
+
+---
+
+### `NEBRunResult`
+
+Returned by `run_neb_calculation`.
+
+| Attribute         | Type    | Description                                           |
+| ----------------- | ------- | ----------------------------------------------------- |
+| `neb`             | `NEB`   | The NEB object after optimisation. Access images via `result.neb.images`, plot via `result.neb.plot(...)`, etc. |
+| `converged`       | `bool`  | `True` if the `fmax` criterion was met                |
+| `barrier`         | `float` | Forward barrier relative to image 0 (eV)             |
+| `reverse_barrier` | `float` | Reverse barrier relative to the last image (eV)      |
+| `reaction_energy` | `float` | ΔE = E_final − E_initial (eV). Should be ~0 for equivalent sites. |
 
 ---
 
@@ -310,28 +422,7 @@ attached to intermediate images.
 
 IDPP interpolation. MIC-aware for periodic systems.
 Returns `[start_copy, img_1, ..., img_n, end_copy]` — no calculators
-attached to intermediate images. Recommended over `linear_interpolate`
-for torsional reactions and any path with risk of atomic overlap.
-
-### `geodesic_interpolate(start, end, n_images, min_distance=0.75)`
-
-Regularized geodesic-style interpolation. Use when Cartesian interpolation
-creates severe atom overlaps or exact atom crossings. This method is
-dependency-free and MIC-aware.
-
-### `NEB.from_trajectory(path, calculator_factory, **neb_kwargs)`
-
-Restart an interrupted run from an ASE `.traj` file. Calculators are not stored
-in trajectory files, so `calculator_factory` must return one fresh calculator
-instance per image.
-
-```python
-from ase.calculators.emt import EMT
-from nebwalk import NEB
-
-neb = NEB.from_trajectory("neb.traj", calculator_factory=EMT, climb=True)
-neb.run(fmax=0.05)
-```
+attached to intermediate images. Recommended over `linear_interpolate` for torsional reactions and any path with risk of atomic overlap.
 
 ### `variable_spring_constants(energies, k_max, k_min)`
 
@@ -341,27 +432,26 @@ publicly for use in custom optimisation loops.
 
 ### `compute_neb_forces(images, k, climb, climb_index, energies, forces)`
 
-Low-level force function. Returns a list of `(N_atoms, 3)` arrays.
-`energies` and `forces` can be passed as pre-computed values to avoid
+Low-level force function. Returns a list of `(N_atoms, 3)` arrays. `energies` and `forces` can be passed as pre-computed values to avoid
 redundant calculator calls (used internally by the parallel evaluator).
 
 ---
 
 ## Running tests
 
-```bash
+```
 pip install -e ".[test]"
 pytest tests/ -v
 ```
 
-Current suite: **76 tests** across forces, interpolation, MIC, variable
-springs, parallel evaluation, restart helpers, and the shared engine.
+Current suite: **68 tests** across forces, interpolation, MIC, variable
+springs, and parallel evaluation.
 
 ---
 
 ## Examples
 
-```bash
+```
 python examples/morse_h3.py           # collinear H+H2, Morse potential (self-contained)
 python examples/al_diffusion_emt.py   # Al adatom diffusion on Al(100), EMT
 python examples/ethane_egret.py       # ethane C-C torsion barrier, Egret-1t
@@ -376,18 +466,18 @@ python examples/verify_egret.py       # sanity check: confirm Egret-1t loads cor
 
 ### Validated results
 
-| Example | Calculator | Barrier | Reference | Error |
-|---------|------------|---------|-----------|-------|
-| **Mg vacancy (HCP)** | **MACE-MP-0** | **0.508 eV** | **~0.52 eV (DFT-PBE)** | **2%** |
-| Morse H3 | Morse (analytical) | 0.200 eV | 0.193 eV (exact) | 4% |
-| Al adatom diffusion | EMT | 0.237 eV | ~0.40 eV (DFT-PBE) | finite-size slab |
-| Ethane C–C torsion | Egret-1t | 0.113 eV | 0.126 eV (exp.) | 10% |
-| Al vacancy migration | MACE-MP-0 | 0.508 eV | 0.61 eV (DFT-PBE) | 17%† |
-| Cu vacancy | EMT | 0.755 eV | ~0.70 eV (DFT-PBE) | 7.9% |
-| Ni vacancy | EMT | 1.095 eV | ~1.04 eV (DFT-PBE) | 5.3% |
-| Pd vacancy | EMT | 0.839 eV | ~0.91 eV (DFT-PBE) | 7.8% |
-| Ag vacancy | EMT | 0.682 eV | ~0.66 eV (DFT-PBE) | 3.3% |
-| Pt vacancy | EMT | 0.971 eV | ~1.49 eV (DFT-PBE) | 34.8%‡ |
+| Example              | Calculator         | Barrier  | Reference          | Error            |
+| -------------------- | ------------------ | -------- | ------------------ | ---------------- |
+| Morse H3             | Morse (analytical) | 0.200 eV | 0.193 eV (exact)   | 4%               |
+| Al adatom diffusion  | EMT                | 0.237 eV | ~0.40 eV (DFT-PBE) | finite-size slab |
+| Ethane C–C torsion   | Egret-1t           | 0.113 eV | 0.126 eV (exp.)    | 10%              |
+| Al vacancy migration | MACE-MP-0          | 0.508 eV | 0.61 eV (DFT-PBE)  | 17%†             |
+| Mg vacancy (HCP)     | MACE-MP-0          | 0.508 eV | ~0.52 eV (DFT-PBE) | 2%               |
+| Cu vacancy           | EMT                | 0.755 eV | ~0.70 eV (DFT-PBE) | 7.9%             |
+| Ni vacancy           | EMT                | 1.095 eV | ~1.04 eV (DFT-PBE) | 5.3%             |
+| Pd vacancy           | EMT                | 0.839 eV | ~0.91 eV (DFT-PBE) | 7.8%             |
+| Ag vacancy           | EMT                | 0.682 eV | ~0.66 eV (DFT-PBE) | 3.3%             |
+| Pt vacancy           | EMT                | 0.971 eV | ~1.49 eV (DFT-PBE) | 34.8%‡           |
 
 † MACE-MP-0 systematically underestimates vacancy migration barriers by
 10–20%. This is a known model limitation, not a nebwalk bug.
@@ -397,40 +487,29 @@ itself converged cleanly in 60 steps — the error is from the calculator.
 
 ---
 
-## Release status
-
-`pip install nebwalk` is available on PyPI. For development install: `pip install -e .`
-The next release target is `v0.5.0`.
-
-Quantum ESPRESSO example support is documented in `examples/al_diffusion_qe.py`.
-It is intentionally guarded because reliable QE production runs require native
-Linux, a configured QE executable, and validated pseudopotentials.
-
----
-
 ## References
 
 1. H. Jónsson, G. Mills, K.W. Jacobsen, *Nudged Elastic Band Method for
-   Finding Minimum Energy Paths of Transitions*, in *Classical and Quantum
-   Dynamics in Condensed Phase Simulations*, World Scientific, 1998.
+Finding Minimum Energy Paths of Transitions*, in *Classical and Quantum
+Dynamics in Condensed Phase Simulations*, World Scientific, 1998.
 2. G. Henkelman, H. Jónsson, *Improved tangent estimate in the nudged
-   elastic band method for finding minimum energy paths and saddle points*,
-   J. Chem. Phys. **113**, 9978 (2000).
-   DOI: [10.1063/1.1323224](https://doi.org/10.1063/1.1323224)
+elastic band method for finding minimum energy paths and saddle points*,
+J. Chem. Phys. **113**, 9978 (2000).
+DOI: [10.1063/1.1323224](https://doi.org/10.1063/1.1323224)
 3. G. Henkelman, B.P. Uberuaga, H. Jónsson, *A climbing image nudged
-   elastic band method for finding saddle points and minimum energy paths*,
-   J. Chem. Phys. **113**, 9901 (2000).
-   DOI: [10.1063/1.1329672](https://doi.org/10.1063/1.1329672)
+elastic band method for finding saddle points and minimum energy paths*,
+J. Chem. Phys. **113**, 9901 (2000).
+DOI: [10.1063/1.1329672](https://doi.org/10.1063/1.1329672)
 4. E. Bitzek, P. Koskinen, F. Gähler, M. Moseler, P. Gumbsch, *Structural
-   Relaxation Made Simple*, PRL **97**, 170201 (2006).
-   DOI: [10.1103/PhysRevLett.97.170201](https://doi.org/10.1103/PhysRevLett.97.170201)
+Relaxation Made Simple*, PRL **97**, 170201 (2006).
+DOI: [10.1103/PhysRevLett.97.170201](https://doi.org/10.1103/PhysRevLett.97.170201)
 5. S. Smidstrup, A. Pedersen, K. Stokbro, H. Jónsson, *Improved initial
-   guess for minimum energy path calculations*, J. Chem. Phys. **141**,
-   214106 (2014).
-   DOI: [10.1063/1.4878664](https://doi.org/10.1063/1.4878664)
+guess for minimum energy path calculations*, J. Chem. Phys. **141**,
+214106 (2014).
+DOI: [10.1063/1.4878664](https://doi.org/10.1063/1.4878664)
 6. R. Lindh, A. Bernhardsson, G. Karlström, P.-Å. Malmqvist, *On the use of
-   a Hessian model function in molecular geometry optimizations*,
-   Chem. Phys. Lett. **241**, 423 (1995). (Variable spring constant scheme.)
+a Hessian model function in molecular geometry optimizations*,
+Chem. Phys. Lett. **241**, 423 (1995). (Variable spring constant scheme.)
 
 ---
 
