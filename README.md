@@ -307,6 +307,10 @@ python examples/al_diffusion_emt.py
 python examples/ethane_egret.py
 python examples/al_vacancy_macemp.py
 python examples/mg_vacancy_macemp.py
+python examples/li2o_vacancy_macemp.py
+python examples/cu_adatom_cu100_emt.py
+python examples/ni_adatom_ni100_emt.py
+python examples/mg_vacancy_mgo_macemp.py
 python examples/al_diffusion_qe.py
 ```
 
