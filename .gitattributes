@@ -1,6 +1,12 @@
-*.md text eol=lf
+* text=auto eol=lf
 *.py text eol=lf
+*.md text eol=lf
 *.toml text eol=lf
 *.yml text eol=lf
-*.yaml text eol=lf
-*.ipynb text eol=lf
+*.sh text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+*.png binary
+*.jpg binary
+*.traj binary
+*.vasp binary

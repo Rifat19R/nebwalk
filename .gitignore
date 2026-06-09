@@ -1,34 +1,76 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
 *.egg-info/
-build/
 dist/
-
-# Model files (large binaries)
-*.model
-
-# Run outputs
-*.traj
-*.csv
-*.png
-outputs.txt
-nebwalk-main.zip
-
-# Virtual environment
+build/
+.eggs/
+*.whl
+.venv/
 venv/
-MENTOR_CLAUDE_v2.md
+env/
+
+# NEB run outputs — local only, never commit
+*.traj
+*.vasp
+*.cif
+*.log
+*_profile.csv
+*_profile.png
+*_neb_path.traj
+*_relax.log
+
+# Calculator models — large binary, never commit
 EGRET_1T.model
-examples/cu_vacancy_macemp.py
-examples/h_diffusion_pd_macemp.py
-examples/li_vacancy_macemp.py
-examples/test_idpp_ethane.py
-tests.yml
-benchmarks/scan_cyclohexane_pucker.py
+*.model
+*.pt
+*.pth
+
+# QE working directories
+neb_qe_workdir/
+smoke_test/
+*/tmp/
+espresso.pwi
+espresso.pwo
+*.pwi
+*.pwo
+
+# Local calculation working directories
+MXenes/
+Li2O/
+MgO/
+H_Ru0001_neb_medium/
+image_*/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Benchmark raw outputs (keep only curated results/)
+benchmarks/**/raw/
+benchmarks/**/*.traj
+benchmarks/**/*.vasp
+benchmarks/**/*.log
+
+# Unvalidated / failed / debug example scripts — local only
 examples/butane_egret.py
-calculators/
-nebwalk_project_summary.md
-examples/ethane_egret1t.py
-github/
-*.jpeg
-*.jpg
+examples/h_diffusion_pd_macemp.py
+examples/cu_vacancy_macemp.py
+examples/test_idpp_ethane.py
+
+# Local briefing documents
+MENTOR_CLAUDE_v2.md
+
+# Misplaced CI files
+tests.yml
+
+# BCC Li — MACE-MP-0 domain failure, excluded from validated examples
+examples/li_vacancy_macemp.py
