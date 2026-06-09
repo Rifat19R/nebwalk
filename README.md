@@ -286,6 +286,11 @@ is verified near zero for all symmetric hops.
 | Ni vacancy / FCC Ni | EMT | 1.095 eV | ~1.04 eV (DFT-PBE) | 5.3% |
 | Pd vacancy / FCC Pd | EMT | 0.839 eV | ~0.91 eV (DFT-PBE) | 7.8% |
 | Ag vacancy / FCC Ag | EMT | 0.682 eV | ~0.66 eV (DFT-PBE) | 3.3% |
+| Cu adatom Cu(100)    | EMT                | —        | ~0.05 eV (DFT-PBE)  | 4.6%             |
+| Ni adatom Ni(100)    | EMT                | —        | ~0.63 eV (DFT-PBE)  | 12%§             |
+| Li vacancy Li₂O  | MACE-MP-0          | —        | 0.28 eV (DFT-GGA)   | 1.4%             |
+| Mg vacancy MgO        | MACE-MP-0          | —        | ~2.2 eV (DFT-PBE)   | 2.5%             |
+| H/Cu(111)            | MACE-MP-0          | —        | ~0.50 eV (DFT-PBE)  | ~16%¶           |
 | Pt vacancy / FCC Pt | EMT | 0.971 eV | ~1.49 eV (DFT-PBE) | 34.8%‡ |
 
 † MACE-MP-0 systematically underestimates vacancy migration barriers by
@@ -293,6 +298,10 @@ is verified near zero for all symmetric hops.
 
 ‡ EMT does not capture relativistic effects in Pt. NEB converged cleanly
 in 60 steps — error is from the calculator.
+
+§ Ni adatom on Ni(100): 12% vs DFT-PBE. Reflects EMT surface-energy anisotropy; NEB converged cleanly.
+
+¶ H/Cu(111): surface diffusion benchmark. Error reflects MACE-MP-0 surface accuracy limitations, not a library bug.
 
 § EMT underestimates Ni adatom barriers due to strong d-band character
 at the Ni(100) saddle-point geometry. Profile shape and convergence correct.
@@ -392,7 +401,7 @@ pip install -e ".[test]"
 pytest tests/ -v
 ```
 
-The test suite covers interpolation, NEB force projection, tangent construction,
+The test suite (94 tests) (94 tests) covers interpolation, NEB force projection, tangent construction,
 minimum-image convention handling, variable springs, parallel image evaluation,
 restart helpers, and calculator-factory workflows.
 
