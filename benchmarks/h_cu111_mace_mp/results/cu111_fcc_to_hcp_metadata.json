@@ -1,0 +1,32 @@
+{
+  "system": "H on Cu(111)",
+  "path": "fcc hollow to neighboring hcp hollow",
+  "calculator": "MACE-MP-0 small",
+  "precision": "float64",
+  "slab": "4x4x4 Cu(111)",
+  "lattice_parameter_A": 3.6147,
+  "vacuum_A": 15.0,
+  "coverage": "1/16 ML",
+  "fixed_layers": "bottom two Cu layers",
+  "endpoint_fmax_eV_A": 0.015,
+  "neb_fmax_eV_A": 0.03,
+  "interpolation": "idpp",
+  "climbing_image": true,
+  "n_internal_images": 5,
+  "converged": true,
+  "wall_time_min": 2.67,
+  "forward_barrier_eV": 0.125917,
+  "reverse_barrier_eV": 0.136667,
+  "reaction_energy_eV": -0.010749,
+  "ts_image_index": 3,
+  "relative_energies_meV": [
+    0.0,
+    44.614,
+    111.234,
+    125.917,
+    104.77,
+    33.294,
+    -10.749
+  ],
+  "interpretation": "Clean elementary fcc->hcp hop with one dominant bridge-like transition state."
+}
