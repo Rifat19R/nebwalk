@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.6.0 - TBD
+
+- Add `nebwalk.qe` with `QEParams`, `make_qe_factory()`, and
+  `validate_qe_setup()` for Quantum ESPRESSO-backed NEB calculations.
+- Add independent per-image QE working directories to avoid file collisions.
+- Add QE setup validation for pseudopotential folders, UPF files, and command
+  binaries.
+- Add spin-polarized QE parameter support through `starting_magnetization`.
+- Add a commented QE NEB template for user-provided endpoint structures.
+- Add mocked QE unit tests that do not require a local Quantum ESPRESSO install.
+
 ## v0.5.0 - 2026-06-08
 
 - Fix ASE-style convergence criterion using max per-atom force magnitude.

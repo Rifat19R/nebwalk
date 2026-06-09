@@ -441,8 +441,9 @@ pip install -e ".[test]"
 pytest tests/ -v
 ```
 
-Current suite: **74 tests** across forces, interpolation, MIC, variable
-springs, parallel evaluation, restart helpers, and the shared engine.
+Current suite: **94 tests** across forces, interpolation, MIC, variable
+springs, parallel evaluation, restart helpers, the shared engine, and QE
+calculator helpers.
 
 ---
 
