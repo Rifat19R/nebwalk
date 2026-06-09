@@ -449,38 +449,51 @@ springs, parallel evaluation, restart helpers, and the shared engine.
 ## Examples
 
 ```
-python examples/morse_h3.py           # collinear H+H2, Morse potential (self-contained)
-python examples/al_diffusion_emt.py   # Al adatom diffusion on Al(100), EMT
-python examples/ethane_egret.py       # ethane C-C torsion barrier, Egret-1t
-python examples/al_vacancy_macemp.py  # Al vacancy migration in bulk Al, MACE-MP-0
-python examples/ni_vacancy_emt.py     # Ni vacancy migration, EMT
-python examples/pd_vacancy_emt.py     # Pd vacancy migration, EMT
-python examples/ag_vacancy_emt.py     # Ag vacancy migration, EMT
-python examples/pt_vacancy_emt.py     # Pt vacancy migration, EMT (see footnote)
-python examples/mg_vacancy_macemp.py  # Mg vacancy in HCP Mg, MACE-MP-0
-python examples/verify_egret.py       # sanity check: confirm Egret-1t loads correctly
+python examples/morse_h3.py                # collinear H+H2, Morse potential (self-contained)
+python examples/al_diffusion_emt.py        # Al adatom diffusion on Al(100), EMT
+python examples/cu_adatom_cu100_emt.py     # Cu adatom diffusion on Cu(100), EMT
+python examples/ni_adatom_ni100_emt.py     # Ni adatom diffusion on Ni(100), EMT
+python examples/ethane_egret.py            # ethane C-C torsion barrier, Egret-1t
+python examples/al_vacancy_macemp.py       # Al vacancy migration in bulk Al, MACE-MP-0
+python examples/mg_vacancy_macemp.py       # Mg vacancy in HCP Mg, MACE-MP-0
+python examples/li2o_vacancy_macemp.py     # Li vacancy migration in bulk Li2O, MACE-MP-0
+python examples/mg_vacancy_mgo_macemp.py   # Mg vacancy migration in bulk MgO, MACE-MP-0
+python examples/cu_vacancy_emt.py          # Cu vacancy migration, EMT
+python examples/ni_vacancy_emt.py          # Ni vacancy migration, EMT
+python examples/pd_vacancy_emt.py          # Pd vacancy migration, EMT
+python examples/ag_vacancy_emt.py          # Ag vacancy migration, EMT
+python examples/pt_vacancy_emt.py          # Pt vacancy migration, EMT (see footnote)
+python examples/verify_egret.py            # sanity check: confirm Egret-1t loads correctly
 ```
 
 ### Validated results
 
-| Example              | Calculator         | Barrier  | Reference           | Error            |
-| -------------------- | ------------------ | -------- | ------------------- | ---------------- |
-| Morse H3             | Morse (analytical) | 0.200 eV | 0.193 eV (exact)    | 4%               |
-| Al adatom diffusion  | EMT                | 0.237 eV | ~0.40 eV (DFT-PBE)  | finite-size slab |
-| Ethane C–C torsion   | Egret-1t           | 0.113 eV | 0.126 eV (exp.)     | 10%              |
-| Al vacancy migration | MACE-MP-0          | 0.508 eV | 0.61 eV (DFT-PBE)   | 17%†             |
-| Mg vacancy (HCP)     | MACE-MP-0          | 0.508 eV | ~0.52 eV (DFT-PBE)  | 2%               |
-| Cu vacancy           | EMT                | 0.755 eV | ~0.70 eV (DFT-PBE)  | 7.9%             |
-| Ni vacancy           | EMT                | 1.095 eV | ~1.04 eV (DFT-PBE)  | 5.3%             |
-| Pd vacancy           | EMT                | 0.839 eV | ~0.91 eV (DFT-PBE)  | 7.8%             |
-| Ag vacancy           | EMT                | 0.682 eV | ~0.66 eV (DFT-PBE)  | 3.3%             |
-| Pt vacancy           | EMT                | 0.971 eV | ~1.49 eV (DFT-PBE)  | 34.8%‡           |
+| Example              | Calculator         | Barrier  | Reference               | Error            |
+| -------------------- | ------------------ | -------- | ----------------------- | ---------------- |
+| Morse H3             | Morse (analytical) | 0.200 eV | 0.193 eV (exact)        | 4%               |
+| Al adatom diffusion  | EMT                | 0.237 eV | ~0.40 eV (DFT-PBE)      | finite-size slab |
+| Cu adatom Cu(100)    | EMT                | 0.418 eV | ~0.40 eV (DFT-LDA/exp.) | 4.6%             |
+| Ni adatom Ni(100)    | EMT                | 0.555 eV | ~0.63 eV (DFT-GGA)      | 12.0%§           |
+| Ethane C–C torsion   | Egret-1t           | 0.113 eV | 0.126 eV (exp.)         | 10%              |
+| Al vacancy migration | MACE-MP-0          | 0.508 eV | 0.61 eV (DFT-PBE)       | 17%†             |
+| Mg vacancy (HCP Mg)  | MACE-MP-0          | 0.508 eV | ~0.52 eV (DFT-PBE)      | 2%               |
+| Li vacancy (Li₂O)    | MACE-MP-0          | 0.284 eV | ~0.28 eV (DFT-GGA)      | 1.4%             |
+| Mg vacancy (MgO)     | MACE-MP-0          | 2.254 eV | ~2.20 eV (DFT-PBE)      | 2.5%             |
+| Cu vacancy           | EMT                | 0.755 eV | ~0.70 eV (DFT-PBE)      | 7.9%             |
+| Ni vacancy           | EMT                | 1.095 eV | ~1.04 eV (DFT-PBE)      | 5.3%             |
+| Pd vacancy           | EMT                | 0.839 eV | ~0.91 eV (DFT-PBE)      | 7.8%             |
+| Ag vacancy           | EMT                | 0.682 eV | ~0.66 eV (DFT-PBE)      | 3.3%             |
+| Pt vacancy           | EMT                | 0.971 eV | ~1.49 eV (DFT-PBE)      | 34.8%‡           |
 
 † MACE-MP-0 systematically underestimates vacancy migration barriers by
 10–20%. This is a known model limitation, not a nebwalk bug.
 
 ‡ EMT does not capture relativistic effects significant in Pt. The NEB
 itself converged cleanly in 60 steps — the error is from the calculator.
+
+§ EMT underestimates Ni adatom barriers due to the strong d-band character
+at the Ni(100) saddle-point geometry, which effective-medium theory does not
+resolve. Profile shape and convergence are correct.
 
 ---
 
