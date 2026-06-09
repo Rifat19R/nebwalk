@@ -286,11 +286,11 @@ is verified near zero for all symmetric hops.
 | Ni vacancy / FCC Ni | EMT | 1.095 eV | ~1.04 eV (DFT-PBE) | 5.3% |
 | Pd vacancy / FCC Pd | EMT | 0.839 eV | ~0.91 eV (DFT-PBE) | 7.8% |
 | Ag vacancy / FCC Ag | EMT | 0.682 eV | ~0.66 eV (DFT-PBE) | 3.3% |
-| Cu adatom Cu(100)    | EMT                | —        | ~0.05 eV (DFT-PBE)  | 4.6%             |
-| Ni adatom Ni(100)    | EMT                | —        | ~0.63 eV (DFT-PBE)  | 12%§             |
-| Li vacancy Li₂O  | MACE-MP-0          | —        | 0.28 eV (DFT-GGA)   | 1.4%             |
-| Mg vacancy MgO        | MACE-MP-0          | —        | ~2.2 eV (DFT-PBE)   | 2.5%             |
-| H/Cu(111)            | MACE-MP-0          | —        | ~0.50 eV (DFT-PBE)  | ~16%¶           |
+| Cu adatom Cu(100)    | EMT                | 0.418 eV        | ~0.44 eV (DFT-PBE) | 4.6%             |
+| Ni adatom Ni(100)    | EMT                | 0.555 eV        | ~0.63 eV (DFT-PBE)  | 12%§             |
+| Li vacancy Li₂O  | MACE-MP-0          | 0.284 eV        | 0.28 eV (DFT-GGA)   | 1.4%             |
+| Mg vacancy MgO        | MACE-MP-0          | 2.254 eV        | ~2.2 eV (DFT-PBE)   | 2.5%             |
+| H/Cu(111)            | MACE-MP-0          | 0.126 eV        | ~0.15 eV (DFT-PBE) | ~16%¶           |
 | Pt vacancy / FCC Pt | EMT | 0.971 eV | ~1.49 eV (DFT-PBE) | 34.8%‡ |
 
 † MACE-MP-0 systematically underestimates vacancy migration barriers by
