@@ -281,6 +281,72 @@ weights are not distributed with this repository.
 
 ---
 
+## Quantum ESPRESSO Interface
+
+nebwalk includes a built-in interface to [Quantum ESPRESSO](https://www.quantum-espresso.org/)
+via `nebwalk.qe`. Use this for production NEB calculations where universal MLIPs are out of
+distribution — surface reactions, MXene catalysis, MAX phase defects.
+
+```python
+from nebwalk import run_neb_calculation, NEBRunConfig
+from nebwalk.qe import QEParams, make_qe_factory, validate_qe_setup
+
+params = QEParams(
+    ecutwfc                = 60.0,       # plane-wave cutoff (Ry)
+    ecutrho                = 480.0,      # 8× ecutwfc for PAW
+    kpts                   = (4, 4, 1), # k-point grid for metal slab
+    occupations            = "smearing",
+    smearing               = "marzari-vanderbilt",
+    degauss                = 0.02,
+    nspin                  = 2,          # required for Fe, Co, Ni, Mn
+    starting_magnetization = {1: 0.5},   # species 1 = 50% spin-up
+)
+
+# Validates pw.x binary and all UPF files exist before starting
+validate_qe_setup(
+    pseudo_dir       = "/path/to/pseudo",
+    pseudopotentials = {"Fe": "Fe.pbe-spn-kjpaw_psl.1.0.0.UPF",
+                        "N":  "N.pbe-n-radius_5.UPF"},
+    command          = "pw.x",
+)
+
+# Each image gets an independent subdirectory — prevents wavefunction conflicts
+factory = make_qe_factory(
+    params           = params,
+    pseudo_dir       = "/path/to/pseudo",
+    pseudopotentials = {"Fe": "Fe.pbe-spn-kjpaw_psl.1.0.0.UPF",
+                        "N":  "N.pbe-n-radius_5.UPF"},
+    base_dir         = "neb_qe_workdir",
+    command          = "pw.x",   # or "mpirun -np 4 pw.x"
+)
+
+result = run_neb_calculation(
+    initial            = initial,
+    final              = final,
+    calculator_factory = factory,
+    config             = NEBRunConfig(n_images=7, climb=True, fmax=0.05),
+)
+print(f"Barrier: {result.barrier:.3f} eV")
+```
+
+**`QEParams` key parameters:**
+
+| Parameter | Default | Notes |
+|---|---|---|
+| `ecutwfc` | 40.0 | Plane-wave cutoff (Ry). Check your pseudopotential's recommended value. |
+| `ecutrho` | 320.0 | Charge density cutoff (Ry). Use 8× ecutwfc for USPP/PAW, 4× for NC. |
+| `kpts` | (1,1,1) | k-point grid. (1,1,1) for molecules; (4,4,1) for metal slabs. |
+| `nspin` | 1 | Set to 2 for magnetic systems (Fe, Co, Ni, Mn). Required — not optional. |
+| `starting_magnetization` | None | Dict of {species_index: value}. Required when nspin=2. |
+| `conv_thr` | 1e-8 | SCF convergence threshold (Ry). Tight convergence reduces NEB force noise. |
+
+**Requirements:** Quantum ESPRESSO ≥ 6.8, `pw.x` in PATH, UPF pseudopotential files.
+Recommended set: [SSSP Efficiency](https://www.materialscloud.org/discover/sssp) (PBE).
+
+See `examples/template_qe_neb.py` for a complete annotated template.
+
+---
+
 ## Testing
 
 ```bash
