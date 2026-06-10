@@ -321,6 +321,7 @@ python examples/cu_adatom_cu100_emt.py
 python examples/ni_adatom_ni100_emt.py
 python examples/mg_vacancy_mgo_macemp.py
 python examples/al_diffusion_qe.py
+python examples/al_vacancy_qe.py
 ```
 
 Some calculators are intentionally optional. Egret-1t model files and MACE model
@@ -390,7 +391,8 @@ print(f"Barrier: {result.barrier:.3f} eV")
 **Requirements:** Quantum ESPRESSO ≥ 6.8, `pw.x` in PATH, UPF pseudopotential files.
 Recommended set: [SSSP Efficiency](https://www.materialscloud.org/discover/sssp) (PBE).
 
-See `examples/template_qe_neb.py` for a complete annotated template.
+See `examples/template_qe_neb.py` for a complete annotated template and
+`examples/al_vacancy_qe.py` for a concrete Al vacancy QE/PBE benchmark script.
 
 ---
 
@@ -401,9 +403,9 @@ pip install -e ".[test]"
 pytest tests/ -v
 ```
 
-The test suite (94 tests) (94 tests) covers interpolation, NEB force projection, tangent construction,
-minimum-image convention handling, variable springs, parallel image evaluation,
-restart helpers, and calculator-factory workflows.
+The test suite (94 tests) covers interpolation, NEB force projection, tangent
+construction, minimum-image convention handling, variable springs, parallel
+image evaluation, restart helpers, and calculator-factory workflows.
 
 ---
 
@@ -413,7 +415,7 @@ Short-term priorities:
 
 1. Keep PyPI, GitHub tags, and source metadata synchronized for v0.6.x releases.
 2. Add H/Cu(111) benchmark scripts, static output CSVs, and profile plots.
-3. Add one DFT-backed Quantum ESPRESSO benchmark with small inputs and clear cost warnings.
+3. Expand DFT-backed Quantum ESPRESSO benchmarks with small inputs and clear cost warnings.
 4. Add post-NEB transition-state refinement using a dimer method.
 5. Build a documentation site with theory, API usage, calculator setup, and benchmarks.
 

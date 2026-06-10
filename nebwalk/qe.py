@@ -233,7 +233,7 @@ def make_qe_factory(
         outdir.mkdir(parents=True, exist_ok=True)
 
         if EspressoProfile is not None:
-            _profile = EspressoProfile(shlex.split(command), str(pseudo_path))
+            _profile = EspressoProfile(command, str(pseudo_path))
             return Espresso(
                 profile=_profile,
                 input_data=_input_data(params, pseudo_path, outdir, pseudopotentials),

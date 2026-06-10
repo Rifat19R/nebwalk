@@ -256,7 +256,10 @@ def test_factory_accepts_integer_magnetization_indices(
 
 
 @patch("nebwalk.qe.Espresso")
-def test_factory_rejects_unknown_magnetization_species(mock_espresso, tmp_path: Path) -> None:
+def test_factory_rejects_unknown_magnetization_species(
+    mock_espresso,
+    tmp_path: Path,
+) -> None:
     pseudo_dir = write_pseudos(tmp_path, "Fe.UPF")
     params = QEParams(nspin=2, starting_magnetization={"Co": 0.7})
     factory = make_qe_factory(params, pseudo_dir, {"Fe": "Fe.UPF"})
@@ -284,21 +287,32 @@ def test_factory_passes_extra_input_sections(mock_espresso, tmp_path: Path) -> N
 
 
 @patch("nebwalk.qe.Espresso", autospec=True)
-def test_factory_passes_ase_espresso_arguments(mock_espresso, tmp_path: Path) -> None:
-    pseudo_dir = write_pseudos(tmp_path, "Al.UPF")
-    factory = make_qe_factory(
-        QEParams(kpts=(2, 2, 2)),
-        pseudo_dir,
-        {"Al": "Al.UPF"},
-        base_dir=tmp_path / "qe",
-        command="pw.x",
-    )
+def test_factory_uses_espresso_profile_when_available(
+    mock_espresso,
+    tmp_path: Path,
+) -> None:
+    class FakeEspressoProfile:
+        def __init__(self, command: str, pseudo_dir: str) -> None:
+            self.command = command
+            self.pseudo_dir = pseudo_dir
 
-    factory()
+    pseudo_dir = write_pseudos(tmp_path, "Al.UPF")
+    with patch("nebwalk.qe.EspressoProfile", FakeEspressoProfile):
+        factory = make_qe_factory(
+            QEParams(kpts=(2, 2, 2)),
+            pseudo_dir,
+            {"Al": "Al.UPF"},
+            base_dir=tmp_path / "qe",
+            command="mpirun -np 4 pw.x",
+        )
+
+        factory()
 
     kwargs = mock_espresso.call_args.kwargs
     assert kwargs["pseudopotentials"] == {"Al": "Al.UPF"}
     assert kwargs["kpts"] == (2, 2, 2)
     assert kwargs["directory"].endswith("image_000")
-    assert kwargs["label"] == "espresso"
-    assert kwargs["command"] == "pw.x -in PREFIX.pwi > PREFIX.pwo"
+    assert "label" not in kwargs
+    assert "command" not in kwargs
+    assert kwargs["profile"].command == "mpirun -np 4 pw.x"
+    assert kwargs["profile"].pseudo_dir == str(pseudo_dir.resolve())
