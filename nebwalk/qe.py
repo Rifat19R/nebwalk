@@ -214,6 +214,11 @@ def make_qe_factory(
         from ase.calculators.espresso import Espresso as ASEEspresso
 
         Espresso = ASEEspresso
+        try:
+            from ase.calculators.espresso import EspressoProfile as _EP
+            EspressoProfile = _EP
+        except ImportError:
+            pass
 
     pseudo_path = Path(pseudo_dir).expanduser().resolve()
     base_path = Path(base_dir).expanduser().resolve()
@@ -228,7 +233,7 @@ def make_qe_factory(
         outdir.mkdir(parents=True, exist_ok=True)
 
         if EspressoProfile is not None:
-            _profile = EspressoProfile(shlex.split(command))
+            _profile = EspressoProfile(shlex.split(command), str(pseudo_path))
             return Espresso(
                 profile=_profile,
                 input_data=_input_data(params, pseudo_path, outdir, pseudopotentials),
