@@ -22,6 +22,7 @@ def _espresso_placeholder(*args: Any, **kwargs: Any) -> Any:
 
 
 Espresso = _espresso_placeholder
+EspressoProfile = None  # set lazily alongside Espresso (ASE >= 3.23)
 
 
 @dataclass(frozen=True)
@@ -205,7 +206,7 @@ def make_qe_factory(
     Each factory call creates a fresh image directory, which avoids ASE/QE file
     collisions during serial and parallel NEB force evaluations.
     """
-    global Espresso
+    global Espresso, EspressoProfile
 
     if not pseudopotentials:
         raise ValueError("At least one pseudopotential must be provided.")
@@ -226,6 +227,16 @@ def make_qe_factory(
         outdir = image_dir / "tmp"
         outdir.mkdir(parents=True, exist_ok=True)
 
+        if EspressoProfile is not None:
+            _profile = EspressoProfile(shlex.split(command))
+            return Espresso(
+                profile=_profile,
+                input_data=_input_data(params, pseudo_path, outdir, pseudopotentials),
+                pseudopotentials=dict(pseudopotentials),
+                kpts=params.kpts,
+                koffset=params.koffset,
+                directory=str(image_dir),
+            )
         return Espresso(
             input_data=_input_data(params, pseudo_path, outdir, pseudopotentials),
             pseudopotentials=dict(pseudopotentials),
