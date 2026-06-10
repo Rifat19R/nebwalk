@@ -16,6 +16,23 @@ def write_pseudos(tmp_path: Path, *names: str) -> Path:
     return pseudo_dir
 
 
+@pytest.fixture(autouse=True)
+def _reset_qe_globals():
+    """Reset nebwalk.qe module globals between tests to ensure isolation.
+
+    test_factory_rejects_unknown_magnetization_species has no Espresso mock,
+    so it triggers the real ASE import and sets module-level EspressoProfile.
+    Without this fixture, subsequent tests inherit that state and break.
+    """
+    import nebwalk.qe as _qe
+
+    orig_espresso = _qe.Espresso
+    orig_profile = _qe.EspressoProfile
+    yield
+    _qe.Espresso = orig_espresso
+    _qe.EspressoProfile = orig_profile
+
+
 def test_qe_params_defaults_are_neb_safe() -> None:
     params = QEParams()
 
@@ -238,7 +255,8 @@ def test_factory_accepts_integer_magnetization_indices(
     assert system["starting_magnetization(1)"] == 0.7
 
 
-def test_factory_rejects_unknown_magnetization_species(tmp_path: Path) -> None:
+@patch("nebwalk.qe.Espresso")
+def test_factory_rejects_unknown_magnetization_species(mock_espresso, tmp_path: Path) -> None:
     pseudo_dir = write_pseudos(tmp_path, "Fe.UPF")
     params = QEParams(nspin=2, starting_magnetization={"Co": 0.7})
     factory = make_qe_factory(params, pseudo_dir, {"Fe": "Fe.UPF"})
