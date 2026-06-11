@@ -10,13 +10,17 @@ Example:
     export ESPRESSO_PSEUDO=$HOME/pseudo
     export AL_PSEUDO=Al.pbe-n-kjpaw_psl.1.0.0.UPF
     export ESPRESSO_COMMAND="mpirun -np 8 pw.x"
+    export NEBWALK_QE_CLEAN=1  # optional: remove previous QE outputs first
     python examples/al_vacancy_qe.py
 """
 
 from __future__ import annotations
 
 import os
+import shutil
+import sys
 from pathlib import Path
+from typing import TextIO
 
 import numpy as np
 from ase import Atoms
@@ -31,6 +35,8 @@ PSEUDO_DIR = Path(os.environ.get("ESPRESSO_PSEUDO", Path.home() / "pseudo"))
 PSEUDO = {"Al": os.environ.get("AL_PSEUDO", "Al.pbe-n-kjpaw_psl.1.0.0.UPF")}
 QE_COMMAND = os.environ.get("ESPRESSO_COMMAND", "pw.x")
 WORKDIR = Path("al_vacancy_qe_workdir")
+LOG_FILE = Path("al_vacancy_qe.log")
+CLEAN_RUN = os.environ.get("NEBWALK_QE_CLEAN", "0") == "1"
 
 PARAMS = QEParams(
     ecutwfc=30.0,
@@ -53,6 +59,35 @@ K_MIN = 0.033
 CLIMB = True
 CLIMB_DELAY = 50
 MAX_STEPS = 300
+
+
+class Tee:
+    """Write Python output to terminal and a live log file."""
+
+    def __init__(self, *streams: TextIO) -> None:
+        self.streams = streams
+
+    def write(self, data: str) -> int:
+        for stream in self.streams:
+            stream.write(data)
+        return len(data)
+
+    def flush(self) -> None:
+        for stream in self.streams:
+            stream.flush()
+
+
+def clean_previous_outputs() -> None:
+    """Remove previous QE outputs when explicitly requested by environment."""
+    if WORKDIR.exists():
+        shutil.rmtree(WORKDIR)
+    for path in (
+        Path("al_vacancy_qe_profile.png"),
+        Path("al_vacancy_qe_profile.csv"),
+        Path("al_vacancy_qe_path.traj"),
+    ):
+        if path.exists():
+            path.unlink()
 
 
 def make_al_vacancy_endpoints() -> tuple[Atoms, Atoms]:
@@ -116,9 +151,15 @@ def attach_neb_calculators(images: list[Atoms]) -> None:
 
 def main() -> None:
     """Run endpoint relaxation and CI-NEB for Al vacancy migration."""
+    if CLEAN_RUN:
+        clean_previous_outputs()
+
     print("=" * 72)
     print("nebwalk + Quantum ESPRESSO: Al vacancy migration")
     print("=" * 72)
+    print(f"Live log: {LOG_FILE.resolve()}")
+    if CLEAN_RUN:
+        print("Clean run: removed previous QE workdir/profile outputs")
 
     print("\n[1] Validating QE setup")
     validate_qe_setup(PSEUDO_DIR, PSEUDO, QE_COMMAND)
@@ -181,4 +222,13 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with LOG_FILE.open("w", encoding="utf-8", buffering=1) as log_file:
+        original_stdout = sys.stdout
+        original_stderr = sys.stderr
+        sys.stdout = Tee(original_stdout, log_file)
+        sys.stderr = Tee(original_stderr, log_file)
+        try:
+            main()
+        finally:
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr

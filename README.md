@@ -324,6 +324,18 @@ python examples/al_diffusion_qe.py
 python examples/al_vacancy_qe.py
 ```
 
+For a clean Al vacancy QE rerun, remove stale partial QE outputs through the
+script's explicit clean flag:
+
+```bash
+export ESPRESSO_PSEUDO=$HOME/pseudo
+export AL_PSEUDO=Al.pbe-n-kjpaw_psl.1.0.0.UPF
+export ESPRESSO_COMMAND="pw.x"
+export NEBWALK_QE_CLEAN=1
+python examples/al_vacancy_qe.py
+tail -f al_vacancy_qe.log
+```
+
 Some calculators are intentionally optional. Egret-1t model files and MACE model
 weights are not distributed with this repository.
 
