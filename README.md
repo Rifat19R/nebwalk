@@ -461,7 +461,7 @@ pip install -e ".[test]"
 pytest tests/ -v
 ```
 
-The test suite (94 tests) covers interpolation, NEB force projection, tangent
+The test suite (111 tests) covers interpolation, NEB force projection, tangent
 construction, minimum-image convention handling, variable springs, parallel
 image evaluation, restart helpers, and calculator-factory workflows.
 
