@@ -45,7 +45,7 @@ run_dry() {
   for item in \
     al:emt cu:emt ag:emt ni:emt pd:emt au:emt \
     al:mace cu:mace ag:mace ni:mace pd:mace au:mace \
-    al:qe cu:qe ag:qe w:qe mo:qe si:qe
+    al:qe cu:qe ag:qe w:qe mo:qe si:qe mg:qe ni:qe li:qe fe:qe
   do
     material="${item%%:*}"
     backend="${item##*:}"
@@ -67,6 +67,10 @@ run_qe() {
   export W_PSEUDO=W_pbe_v1.2.uspp.F.UPF
   export MO_PSEUDO=Mo_ONCV_PBE-1.0.oncvpsp.upf
   export SI_PSEUDO=Si.pbe-n-rrkjus_psl.1.0.0.UPF
+  export MG_PSEUDO=Mg.pbe-n-kjpaw_psl.0.3.0.UPF
+  export NI_PSEUDO=ni_pbe_v1.4.uspp.F.UPF
+  export LI_PSEUDO=li_pbe_v1.4.uspp.F.UPF
+  export FE_PSEUDO=Fe.pbe-spn-kjpaw_psl.0.2.1.UPF
 
   run examples/al_vacancy_qe_suite.py
   run examples/cu_vacancy_qe.py
@@ -74,6 +78,10 @@ run_qe() {
   run examples/w_vacancy_qe.py
   run examples/mo_vacancy_qe.py
   run examples/si_vacancy_qe.py
+  run examples/mg_vacancy_qe.py
+  run examples/ni_vacancy_qe.py
+  run examples/li_vacancy_qe.py
+  run examples/fe_vacancy_qe.py
 }
 
 run_qe_targets() {
@@ -89,6 +97,27 @@ run_qe_targets() {
   run examples/w_vacancy_qe.py
   run examples/mo_vacancy_qe.py
   run examples/si_vacancy_qe.py
+}
+
+run_qe_extended() {
+  export NEBWALK_RUN_QE=1
+  export ESPRESSO_PSEUDO=/mnt/d/Rifat_kh/SSSP_1.3.0_PBE_efficiency
+  export ESPRESSO_COMMAND="mpirun --oversubscribe -np 4 pw.x"
+  export NEBWALK_QE_CLEAN=1
+
+  export CU_PSEUDO=Cu.paw.z_11.ld1.psl.v1.0.0-low.upf
+  export AG_PSEUDO=Ag_ONCV_PBE-1.0.oncvpsp.upf
+  export MG_PSEUDO=Mg.pbe-n-kjpaw_psl.0.3.0.UPF
+  export NI_PSEUDO=ni_pbe_v1.4.uspp.F.UPF
+  export LI_PSEUDO=li_pbe_v1.4.uspp.F.UPF
+  export FE_PSEUDO=Fe.pbe-spn-kjpaw_psl.0.2.1.UPF
+
+  run examples/cu_vacancy_qe.py
+  run examples/ag_vacancy_qe.py
+  run examples/mg_vacancy_qe.py
+  run examples/ni_vacancy_qe.py
+  run examples/li_vacancy_qe.py
+  run examples/fe_vacancy_qe.py
 }
 
 run_all_local() {
@@ -124,6 +153,9 @@ case "${MODE}" in
   qe-targets)
     run_qe_targets
     ;;
+  qe-extended)
+    run_qe_extended
+    ;;
   all)
     run_all_local
     ;;
@@ -132,9 +164,10 @@ case "${MODE}" in
     run_qe
     ;;
   *)
-    echo "Usage: bash run.sh [all|safe|dry|emt|mace|qe|qe-targets|full]" >&2
+    echo "Usage: bash run.sh [all|safe|dry|emt|mace|qe|qe-targets|qe-extended|full]" >&2
     echo "  all : local validation only (safe + EMT + MACE), no QE" >&2
     echo "  qe-targets: real QE for W/Mo/Si vacancy tests" >&2
+    echo "  qe-extended: real QE for Cu/Ag/Mg/Ni/Li/Fe vacancy tests" >&2
     echo "  full: local validation plus real QE calculations" >&2
     exit 2
     ;;

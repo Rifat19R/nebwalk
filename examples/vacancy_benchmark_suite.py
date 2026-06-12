@@ -34,12 +34,13 @@ Backend = Literal["emt", "mace", "qe"]
 @dataclass(frozen=True)
 class VacancySystem:
     symbol: str
-    crystal: Literal["fcc", "bcc", "diamond"]
+    crystal: Literal["fcc", "bcc", "hcp", "diamond"]
     lattice_a: float
     repeat: tuple[int, int, int]
     reference_barrier: float
     reference_label: str
     description: str
+    lattice_c: float | None = None
     magnetic: bool = False
 
 
@@ -126,9 +127,38 @@ SYSTEMS: dict[str, VacancySystem] = {
         reference_label="~0.45 eV DFT-PBE, neutral vacancy order-of-magnitude",
         description="Diamond Si vacancy migration",
     ),
+    "mg": VacancySystem(
+        symbol="Mg",
+        crystal="hcp",
+        lattice_a=3.209,
+        lattice_c=5.211,
+        repeat=(2, 2, 2),
+        reference_barrier=0.52,
+        reference_label="~0.52 eV DFT-PBE, HCP Mg vacancy",
+        description="HCP Mg vacancy migration",
+    ),
+    "li": VacancySystem(
+        symbol="Li",
+        crystal="bcc",
+        lattice_a=3.51,
+        repeat=(2, 2, 2),
+        reference_barrier=0.05,
+        reference_label="~0.05 eV DFT-PBE, BCC alkali-metal vacancy scale",
+        description="BCC Li vacancy migration",
+    ),
+    "fe": VacancySystem(
+        symbol="Fe",
+        crystal="bcc",
+        lattice_a=2.866,
+        repeat=(2, 2, 2),
+        reference_barrier=0.67,
+        reference_label="~0.67 eV DFT-PBE, ferromagnetic BCC Fe vacancy",
+        description="BCC Fe vacancy migration",
+        magnetic=True,
+    ),
 }
 
-QE_MATERIALS = {"al", "cu", "ag", "w", "mo", "si"}
+QE_MATERIALS = {"al", "cu", "ag", "w", "mo", "si", "mg", "li", "fe", "ni"}
 EMT_MATERIALS = {"al", "cu", "ag", "ni", "pd", "au"}
 MACE_MATERIALS = {"al", "cu", "ag", "ni", "pd", "au", "w", "mo", "si"}
 MACE_MODEL_BY_MATERIAL = {
@@ -147,6 +177,14 @@ QE_PSEUDO_ENV = {
 def build_bulk(system: VacancySystem) -> Atoms:
     if system.crystal == "diamond":
         atoms = bulk(system.symbol, "diamond", a=system.lattice_a, cubic=True)
+    elif system.crystal == "hcp":
+        atoms = bulk(
+            system.symbol,
+            "hcp",
+            a=system.lattice_a,
+            c=system.lattice_c,
+            orthorhombic=True,
+        )
     else:
         atoms = bulk(system.symbol, system.crystal, a=system.lattice_a, cubic=True)
     atoms = atoms.repeat(system.repeat)
@@ -261,8 +299,8 @@ def run_ase_neb(material: str, backend: Backend) -> None:
 def qe_params_for(system: VacancySystem) -> QEParams:
     is_metal = system.symbol not in {"Si"}
     extra_system: dict[str, object] = {"input_dft": "PBE"}
-    if system.magnetic:
-        extra_system["nspin"] = 2
+    nspin = 2 if system.magnetic else 1
+    starting_magnetization = {system.symbol: 0.3} if system.magnetic else None
 
     if is_metal:
         return QEParams(
@@ -274,6 +312,8 @@ def qe_params_for(system: VacancySystem) -> QEParams:
             degauss=0.02,
             conv_thr=1.0e-7,
             mixing_beta=0.3,
+            nspin=nspin,
+            starting_magnetization=starting_magnetization,
             extra_system=extra_system,
         )
     return QEParams(
@@ -283,6 +323,8 @@ def qe_params_for(system: VacancySystem) -> QEParams:
         occupations="fixed",
         conv_thr=1.0e-8,
         mixing_beta=0.4,
+        nspin=nspin,
+        starting_magnetization=starting_magnetization,
         extra_system=extra_system,
     )
 
@@ -391,7 +433,10 @@ def print_header(system: VacancySystem, backend: Backend) -> None:
     print("=" * 72)
     print(f"{system.description}")
     print(f"Calculator      : {backend.upper()}")
-    print(f"Crystal         : {system.crystal}, a={system.lattice_a:.4f} Angstrom")
+    crystal_line = f"{system.crystal}, a={system.lattice_a:.4f} Angstrom"
+    if system.lattice_c is not None:
+        crystal_line += f", c={system.lattice_c:.4f} Angstrom"
+    print(f"Crystal         : {crystal_line}")
     print(f"Supercell       : {system.repeat[0]}x{system.repeat[1]}x{system.repeat[2]}")
     print(f"Reference       : {system.reference_label}")
     print("=" * 72)
