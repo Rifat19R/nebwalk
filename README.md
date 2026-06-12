@@ -528,7 +528,7 @@ python -c "import nebwalk; print(nebwalk.__version__ if hasattr(nebwalk, '__vers
 3. G. Henkelman, B. P. Uberuaga, and H. Jónsson, *A climbing image nudged elastic band method for finding saddle points and minimum energy paths*, J. Chem. Phys. 113, 9901 (2000).
 4. E. Bitzek, P. Koskinen, F. Gähler, M. Moseler, and P. Gumbsch, *Structural Relaxation Made Simple*, Phys. Rev. Lett. 97, 170201 (2006).
 5. S. Smidstrup, A. Pedersen, K. Stokbro, and H. Jónsson, *Improved initial guess for minimum energy path calculations*, J. Chem. Phys. 141, 214106 (2014).
-6. MACE-MP-0 documentation and foundation model papers for ML-potential context.
+6. Batatia et al., A foundation model for atomistic materials chemistry, arXiv:2401.00096.
 7. H/Cu(111) diffusion literature should be treated as macroscopic diffusion reference, not a one-to-one static NEB barrier target.
 
 ---
