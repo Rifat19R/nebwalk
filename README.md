@@ -16,7 +16,7 @@ calculators, while remaining compatible with DFT backends through ASE.
 pip install nebwalk
 ```
 
-Current source version: **v0.7.1**.
+Current source version: **v0.8.0**.
 
 ---
 
@@ -553,7 +553,7 @@ rm -rf dist/ build/ *.egg-info
 python -m build
 python -m twine check dist/*
 python -m twine upload dist/*
-VERSION=v0.7.1
+VERSION=v0.8.0
 git tag -a "$VERSION" -m "nebwalk $VERSION"
 git push origin main "$VERSION"
 ```

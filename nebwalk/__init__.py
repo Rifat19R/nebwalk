@@ -18,7 +18,7 @@ from .qe import QEParams, make_qe_factory, validate_qe_setup
 from .reproduce import ReproBundle, save_bundle
 from .selection import select_images, select_peak_plus_neighbors
 
-__version__ = "0.7.1"
+__version__ = "0.8.0"
 
 __all__ = [
     "NEB",
