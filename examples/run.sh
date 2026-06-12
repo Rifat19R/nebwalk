@@ -79,6 +79,23 @@ run_qe() {
   run examples/si_vacancy_qe.py
 }
 
+run_all_local() {
+  run_safe
+  run examples/al_vacancy_emt.py
+  run examples/cu_vacancy_emt.py
+  run examples/ag_vacancy_emt.py
+  run examples/ni_vacancy_emt.py
+  run examples/pd_vacancy_emt.py
+  run examples/al_vacancy_mace.py
+  run examples/cu_vacancy_mace.py
+  run examples/ag_vacancy_mace.py
+  run examples/ni_vacancy_mace.py
+  run examples/pd_vacancy_mace.py
+  run examples/w_vacancy_mace.py
+  run examples/mo_vacancy_mace.py
+  run examples/si_vacancy_mace.py
+}
+
 case "${MODE}" in
   safe)
     run_safe
@@ -96,24 +113,16 @@ case "${MODE}" in
     run_qe
     ;;
   all)
-    run_safe
-    run examples/al_vacancy_emt.py
-    run examples/cu_vacancy_emt.py
-    run examples/ag_vacancy_emt.py
-    run examples/ni_vacancy_emt.py
-    run examples/pd_vacancy_emt.py
-    run examples/al_vacancy_mace.py
-    run examples/cu_vacancy_mace.py
-    run examples/ag_vacancy_mace.py
-    run examples/ni_vacancy_mace.py
-    run examples/pd_vacancy_mace.py
-    run examples/w_vacancy_mace.py
-    run examples/mo_vacancy_mace.py
-    run examples/si_vacancy_mace.py
+    run_all_local
+    ;;
+  full)
+    run_all_local
     run_qe
     ;;
   *)
-    echo "Usage: bash run.sh [all|safe|dry|emt|mace|qe]" >&2
+    echo "Usage: bash run.sh [all|safe|dry|emt|mace|qe|full]" >&2
+    echo "  all : local validation only (safe + EMT + MACE), no QE" >&2
+    echo "  full: local validation plus real QE calculations" >&2
     exit 2
     ;;
 esac
