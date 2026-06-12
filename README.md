@@ -49,7 +49,8 @@ around ASE calculators and atomic structures.
 - Minimum-image-convention-aware interpolation and NEB forces for periodic systems.
 - Variable spring constants to concentrate images near high-energy regions.
 - High-level `run_neb_calculation()` API with calculator factories.
-- Thread-based parallel image evaluation.
+- Thread-based parallel image evaluation for CPU calculators; CUDA calculators
+  are automatically forced to serial evaluation.
 - Restart from ASE `.traj` files with fresh calculator instances.
 - Energy-profile plotting, CSV export, and `.traj` output.
 - Quantum ESPRESSO helper layer through ASE calculator construction.
@@ -457,7 +458,7 @@ pip install -e ".[test]"
 pytest tests/ -v
 ```
 
-The test suite (111 tests) covers interpolation, NEB force projection, tangent
+The test suite (115 tests) covers interpolation, NEB force projection, tangent
 construction, minimum-image convention handling, variable springs, parallel
 image evaluation, restart helpers, and calculator-factory workflows.
 

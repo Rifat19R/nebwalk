@@ -6,6 +6,23 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.7.1] — 2026-06-12
+
+### Fixed
+- Improved-tangent bisection branch now weights unit vectors by energy
+  differences per Henkelman-Jonsson Eq. 10, avoiding displacement-length bias
+  at extremum images.
+- Variable spring constants now reference the global path minimum, preserving
+  spring ordering when intermediates lie below both endpoints.
+- CUDA-backed calculators are forced to serial image evaluation with a warning
+  because thread-based CUDA force evaluation can silently corrupt results.
+- Exported selected-images README now reports the actual selection strategy.
+- Example benchmark runner now defaults to the full suite, avoids duplicate
+  safe-mode runs, documents all QE pseudopotentials, uses `np=4` with Open MPI
+  oversubscription for WSL, and cleans stale QE workdirs before QE reruns.
+
+---
+
 ## [0.7.0] — 2026-06-12
 
 ### Added

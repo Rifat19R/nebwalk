@@ -28,15 +28,16 @@ Run:
 
 import logging
 import warnings
+
 import numpy as np
-
-logging.disable(logging.INFO)
-warnings.filterwarnings("ignore")
-
 from ase.build import bulk
 from ase.optimize import BFGS
 from mace.calculators import mace_mp
+
 from nebwalk import NEB, linear_interpolate
+
+logging.disable(logging.INFO)
+warnings.filterwarnings("ignore")
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -50,7 +51,7 @@ K_SPRING   = 0.10   # eV/Å²
 FMAX_RELAX = 0.01   # eV/Å
 FMAX_NEB   = 0.05   # eV/Å
 
-print(f"System          : Al vacancy diffusion in bulk FCC Al")
+print("System          : Al vacancy diffusion in bulk FCC Al")
 print(f"MACE-MP-0 model : {MODEL}")
 print(f"Device          : {DEVICE}")
 print(f"dtype           : {DTYPE}\n")
@@ -122,8 +123,8 @@ converged = neb.optimize(fmax=FMAX_NEB, max_steps=300)
 
 print(f"\nConverged          : {converged}")
 print(f"Forward barrier    : {neb.get_barrier():.4f} eV")
-print(f"DFT (PBE) ref.     : ~0.61 eV  (Mantina et al., PRL 100, 215901, 2008)")
-print(f"Experimental       : ~0.60–0.68 eV")
+print("DFT (PBE) ref.     : ~0.61 eV  (Mantina et al., PRL 100, 215901, 2008)")
+print("Experimental       : ~0.60–0.68 eV")
 
 # ---------------------------------------------------------------------------
 # Output

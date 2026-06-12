@@ -6,8 +6,8 @@ Run with:  pytest tests/test_variable_k.py -v
 
 import numpy as np
 import pytest
-from nebwalk.forces import variable_spring_constants, compute_neb_forces
 
+from nebwalk.forces import compute_neb_forces, variable_spring_constants
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -19,6 +19,7 @@ def _mock_images(energies, n_atoms=1):
     Used to test compute_neb_forces without a real calculator.
     """
     from unittest.mock import MagicMock
+
     import numpy as np
     images = []
     for i, E in enumerate(energies):
@@ -172,12 +173,12 @@ class TestComputeNEBForcesArrayK:
         images[2].positions = np.array([[2.0, 0.0, 0.0]])
 
         k_uniform  = 0.1
-        k_variable = np.array([0.1, 0.2])  # stronger forward spring (between img 1 and 2)
+        k_variable = np.array([0.1, 0.2])
 
         f_uniform  = compute_neb_forces(images, k_uniform,  energies=energies)
         f_variable = compute_neb_forces(images, k_variable, energies=energies)
 
-        # k_fwd=0.2, k_bwd=0.1, d_fwd=d_bwd=1.0 → spring = (0.2-0.1)*1.0 = +0.1 along tau
+        # Stronger forward spring adds +0.1 along the tangent.
         spring_diff = f_variable[1][0, 0] - f_uniform[1][0, 0]
         assert abs(spring_diff - 0.1) < 1e-10, \
             f"Expected spring difference +0.1, got {spring_diff:.6f}"
@@ -191,8 +192,9 @@ class TestNEBVariableK:
 
     def test_k_min_validation(self):
         """k_min >= k must raise ValueError."""
-        from nebwalk import NEB
         from unittest.mock import MagicMock
+
+        from nebwalk import NEB
         imgs = []
         for i in range(5):
             img = MagicMock()
@@ -203,9 +205,11 @@ class TestNEBVariableK:
 
     def test_get_spring_constants_uniform(self):
         """get_spring_constants returns uniform array when k_min is None."""
-        from nebwalk import NEB
         from unittest.mock import MagicMock
+
         import numpy as np
+
+        from nebwalk import NEB
 
         n = 5
         imgs = []
@@ -221,9 +225,11 @@ class TestNEBVariableK:
 
     def test_get_spring_constants_variable(self):
         """get_spring_constants returns variable array when k_min is given."""
-        from nebwalk import NEB
         from unittest.mock import MagicMock
+
         import numpy as np
+
+        from nebwalk import NEB
 
         energies = [0.0, 0.3, 1.0, 0.3, 0.0]
         imgs = []

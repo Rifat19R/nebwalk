@@ -21,6 +21,7 @@ import torch
 from ase import Atoms
 from ase.optimize import BFGS
 from mace.calculators import MACECalculator
+
 from nebwalk import NEB, idpp_interpolate
 
 # ---------------------------------------------------------------------------
@@ -121,7 +122,7 @@ converged = neb.optimize(fmax=0.05, max_steps=400)
 
 print(f"\nConverged       : {converged}")
 print(f"Forward barrier : {neb.get_barrier():.4f} eV")
-print(f"Literature      : ~0.126 eV  (12.2 kJ/mol)")
+print("Literature      : ~0.126 eV  (12.2 kJ/mol)")
 print(f"k_springs       : {neb.get_spring_constants().round(4)}")
 
 # ---------------------------------------------------------------------------

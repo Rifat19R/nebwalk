@@ -73,3 +73,7 @@ def select_images(
             include_endpoints=include_endpoints,
         )
     raise ValueError(f"unsupported selection strategy: {strategy!r}")
+
+
+# Public alias matching the v0.7.0 validation briefing.
+peak_plus_neighbors = select_peak_plus_neighbors

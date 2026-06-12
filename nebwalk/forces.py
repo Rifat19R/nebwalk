@@ -43,9 +43,9 @@ def _improved_tangent(
     dE_min = min(dE_fwd, dE_bwd)
 
     if E_next >= E_prev:
-        tau = dr_fwd * dE_max + dr_bwd * dE_min
+        tau = (dr_fwd / d_fwd) * dE_max + (dr_bwd / d_bwd) * dE_min
     else:
-        tau = dr_fwd * dE_min + dr_bwd * dE_max
+        tau = (dr_fwd / d_fwd) * dE_min + (dr_bwd / d_bwd) * dE_max
 
     norm = np.linalg.norm(tau)
     if norm < 1e-12:
@@ -78,13 +78,13 @@ def variable_spring_constants(
     k_max: float,
     k_min: float,
 ) -> FloatArray:
-    """Compute energy-weighted spring constants for each inter-image spring."""
+    """Compute spring constants using the global path energy window."""
     E = np.array(energies, dtype=float)
     n = len(E)
 
     E_spring = np.maximum(E[:-1], E[1:])
     E_ref = E.max()
-    E_low = min(E[0], E[-1])
+    E_low = E.min()
 
     dE = E_ref - E_low
     if dE < 1e-10:

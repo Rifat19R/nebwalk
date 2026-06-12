@@ -16,9 +16,9 @@ import numpy as np
 import pytest
 from ase.build import bulk
 from ase.calculators.emt import EMT
-from nebwalk import NEB, idpp_interpolate
-from nebwalk.optimize import _eval_all, fire_optimize
 
+from nebwalk import NEB, idpp_interpolate
+from nebwalk.optimize import _calculator_uses_cuda, _eval_all, fire_optimize
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -47,6 +47,19 @@ def _al_images(n_images=5):
 # ---------------------------------------------------------------------------
 # _eval_all correctness
 # ---------------------------------------------------------------------------
+
+def test_calculator_uses_cuda_detects_device_string():
+    """CUDA calculator detection should work without importing heavy models."""
+
+    class FakeCudaCalc:
+        device = "cuda:0"
+
+    class FakeCpuCalc:
+        device = "cpu"
+
+    assert _calculator_uses_cuda(FakeCudaCalc()) is True
+    assert _calculator_uses_cuda(FakeCpuCalc()) is False
+
 
 class TestEvalAll:
 

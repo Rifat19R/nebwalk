@@ -18,14 +18,13 @@ Runtime: < 1 minute on any CPU.
 """
 
 import numpy as np
-
 from ase import Atom
 from ase.build import fcc100
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
 from ase.optimize import FIRE
 
-from nebwalk import run_neb_calculation, NEBRunConfig
+from nebwalk import NEBRunConfig, run_neb_calculation
 
 # ── Reference ─────────────────────────────────────────────────────────────────
 REF_BARRIER = 0.40  # eV, DFT-LDA/FIM experiment

@@ -113,6 +113,29 @@ def _eval_image(img: Atoms) -> tuple[float, FloatArray]:
     return energy, forces
 
 
+def _calculator_uses_cuda(calc: Any) -> bool:
+    """Best-effort detection of a CUDA-backed torch calculator."""
+    device = getattr(calc, "device", None)
+    if device is not None and "cuda" in str(device).lower():
+        return True
+
+    models = getattr(calc, "models", None)
+    if models:
+        try:
+            import torch  # noqa: F401
+
+            for model in models:
+                params = getattr(model, "parameters", None)
+                if params is not None:
+                    p = next(iter(params()), None)
+                    if p is not None and p.is_cuda:
+                        return True
+        except Exception:
+            return False
+
+    return False
+
+
 def _eval_all(
     images: Sequence[Atoms],
     n_workers: int,
@@ -161,7 +184,11 @@ def fire_optimize(
     f_dec: float = 0.50,
     f_alpha: float = 0.99,
 ) -> tuple[bool, int, list[dict[str, Any]]]:
-    """Run FIRE optimization on the NEB path."""
+    """Run FIRE optimization on the NEB path.
+
+    Thread-based parallelism is intended for CPU calculators. CUDA-backed
+    calculators are automatically forced to serial evaluation.
+    """
     validate_calculators(images)
 
     n_movable = len(images) - 2
@@ -183,6 +210,15 @@ def fire_optimize(
     climb_index: int | None = None
     use_variable_k = k_min is not None
     fmax_curr = float("inf")
+
+    if n_workers > 1 and any(_calculator_uses_cuda(img.calc) for img in images[1:-1]):
+        logger.warning(
+            "n_workers > 1 with a CUDA-backed calculator detected. "
+            "Multi-threaded CUDA evaluation on a shared stream is not "
+            "thread-safe and can silently corrupt forces. Falling back "
+            "to serial evaluation (n_workers=1)."
+        )
+        n_workers = 1
 
     if verbose and n_workers > 1:
         logger.info(

@@ -61,7 +61,7 @@ def _nebwalk_version() -> str:
     try:
         return importlib_metadata.version("nebwalk")
     except importlib_metadata.PackageNotFoundError:
-        return "0.7.0"
+        return "0.7.1"
 
 
 def _validate_export_formats(export_formats: Sequence[str]) -> tuple[str, ...]:
@@ -111,10 +111,11 @@ def export_selected_images(
             handle.write("\n")
 
     readme = out / "README.md"
+    strategy = selected[0].reason if selected else "unknown"
     readme.write_text(
         "# nebwalk selected images\n\n"
         "These images were selected from an MLIP-assisted NEB path using the "
-        "`peak_plus_neighbors` strategy.\n\n"
+        f"`{strategy}` strategy.\n\n"
         "They are intended for DFT/QE refinement, single-point validation, or "
         "later active-learning labeling.\n\n"
         "This folder does not contain a complete DFT workflow by itself.\n",

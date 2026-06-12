@@ -16,7 +16,6 @@ from ase.optimize import BFGS
 
 from nebwalk import NEB, linear_interpolate
 
-
 # ---------------------------------------------------------------------------
 # 1. Build supercell and create vacancy
 # ---------------------------------------------------------------------------

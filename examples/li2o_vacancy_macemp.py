@@ -16,16 +16,15 @@ Usage
 Runtime: ~10 minutes on CPU (4-core laptop).
 """
 
-import numpy as np
 from copy import deepcopy
 
+import numpy as np
 from ase import Atoms
 from ase.build import make_supercell
-from ase.io import write
 from ase.optimize import FIRE
 from mace.calculators import mace_mp
 
-from nebwalk import run_neb_calculation, NEBRunConfig
+from nebwalk import NEBRunConfig, run_neb_calculation
 
 # ── Reference ─────────────────────────────────────────────────────────────────
 REF_BARRIER = 0.28   # eV, DFT-GGA central estimate

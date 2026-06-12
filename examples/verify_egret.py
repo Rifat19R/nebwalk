@@ -4,6 +4,7 @@ Run this BEFORE the full NEB example.
 """
 
 import sys
+
 import numpy as np
 import torch
 from ase import Atoms
@@ -45,7 +46,10 @@ F = atoms.get_forces()
 
 print(f"Energy       : {E:.4f} eV  (absolute; only differences matter for NEB)")
 print(f"Forces shape : {F.shape}  (should be (8, 3))")
-print(f"Max |F|      : {np.max(np.abs(F)):.4f} eV/Å  (nonzero expected; approx geometry)")
+print(
+    f"Max |F|      : {np.max(np.abs(F)):.4f} eV/Å "
+    "(nonzero expected; approx geometry)"
+)
 
 if F.shape == (8, 3):
     print("\nAll checks passed. Ready to run examples/ethane_egret.py")

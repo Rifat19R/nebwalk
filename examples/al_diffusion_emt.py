@@ -16,10 +16,11 @@ Requires: ase (pip install ase)
 """
 
 import numpy as np
-from ase.build import fcc100, add_adsorbate
+from ase.build import add_adsorbate, fcc100
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
 from ase.optimize import BFGS
+
 from nebwalk import NEB, linear_interpolate
 
 # ---------------------------------------------------------------------------

@@ -16,7 +16,11 @@ from .output import plot_energy_profile, save_csv, save_trajectory
 
 
 class NEB:
-    """Nudged Elastic Band path optimizer."""
+    """Nudged Elastic Band path optimizer.
+
+    Thread-based parallel image evaluation is intended for CPU calculators.
+    CUDA-backed calculators are automatically forced to serial evaluation.
+    """
 
     def __init__(
         self,

@@ -23,15 +23,15 @@ spring constants place fewer images near the TS; variable springs
 CI-NEB barrier value.
 """
 
-import numpy as np
 from copy import deepcopy
 
+import numpy as np
 from ase import Atoms
 from ase.build import make_supercell
 from ase.optimize import FIRE
 from mace.calculators import mace_mp
 
-from nebwalk import run_neb_calculation, NEBRunConfig
+from nebwalk import NEBRunConfig, run_neb_calculation
 
 # ── Reference ─────────────────────────────────────────────────────────────────
 REF_BARRIER = 2.20   # eV, DFT-PBE central estimate

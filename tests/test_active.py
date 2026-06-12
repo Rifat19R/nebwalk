@@ -84,6 +84,28 @@ def test_export_selected_images_json_schema(tmp_path):
     assert payload["metadata"]["nebwalk_version"] == "0.7.0"
 
 
+def test_export_readme_reflects_strategy(tmp_path):
+    selected = (
+        SelectedImage(
+            index=1,
+            energy=0.5,
+            relative_energy=0.5,
+            reason="custom_strategy",
+        ),
+    )
+
+    output_dir = export_selected_images(
+        images=_images(),
+        selected=selected,
+        output_dir=tmp_path / "selected",
+        export_formats=("json",),
+    )
+    text = (output_dir / "README.md").read_text(encoding="utf-8")
+
+    assert "custom_strategy" in text
+    assert "peak_plus_neighbors" not in text
+
+
 def test_export_selected_images_rejects_unsupported_format(tmp_path):
     with pytest.raises(ValueError, match="unsupported export format"):
         export_selected_images(

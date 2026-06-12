@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 from ase import Atoms
+
 from nebwalk.interpolate import geodesic_interpolate, linear_interpolate
 
 

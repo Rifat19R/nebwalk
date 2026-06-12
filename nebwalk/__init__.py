@@ -17,7 +17,7 @@ from .output import plot_energy_profile, save_csv, save_trajectory
 from .qe import QEParams, make_qe_factory, validate_qe_setup
 from .selection import select_images, select_peak_plus_neighbors
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 __all__ = [
     "NEB",

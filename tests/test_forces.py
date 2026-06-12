@@ -8,9 +8,13 @@ All shape checks and physics invariants are tested analytically.
 import numpy as np
 import pytest
 from ase import Atoms
-from nebwalk import NEB
-from nebwalk.forces import compute_neb_forces, _improved_tangent
 
+from nebwalk import NEB
+from nebwalk.forces import (
+    _improved_tangent,
+    compute_neb_forces,
+    variable_spring_constants,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -105,7 +109,7 @@ def test_neb_band_properties():
 def test_spring_force_zero_for_equal_spacing():
     """Equally spaced images → zero spring force."""
     images = _make_images(5, spacing=1.0)
-    forces = compute_neb_forces(images, k=0.5)
+    compute_neb_forces(images, k=0.5)
     # For ascending energy profile, tau = forward direction = [1, 0, 0]
     # Spring = k*(1.0 - 1.0)*tau = 0
     # Total NEB force = f_pot_perp = [0.1, 0.05, 0] - 0.1*[1,0,0] = [0, 0.05, 0]
@@ -129,7 +133,7 @@ def test_spring_force_nonzero_for_unequal_spacing():
         atoms.calc = MockCalculator(e_profile[i], [[0.0, 0.0, 0.0]])
         images.append(atoms)
 
-    forces = compute_neb_forces(images, k=1.0)
+    compute_neb_forces(images, k=1.0)
     k = 1.0
     # For image 1: d_fwd = 1.5, d_bwd = 0.5; spring = 1.0*(1.5-0.5) = 1.0 eV/Å
     d_fwd_1 = 2.0 - 0.5
@@ -262,14 +266,47 @@ def test_improved_tangent_is_normalised():
         )
 
 
+def test_improved_tangent_bisection_uses_unit_vectors():
+    """Bisection-case tangent must be invariant to neighbor spacing."""
+    E_prev, E_curr, E_next = 0.0, 1.0, 0.4
+
+    dr_fwd_unit = np.array([[1.0, 0.0, 0.0]])
+    dr_bwd_unit = np.array([[0.0, 1.0, 0.0]])
+
+    tau_a = _improved_tangent(
+        dr_fwd_unit, dr_bwd_unit, 1.0, 1.0, E_prev, E_curr, E_next
+    )
+    tau_b = _improved_tangent(
+        10.0 * dr_fwd_unit, dr_bwd_unit, 10.0, 1.0, E_prev, E_curr, E_next
+    )
+
+    np.testing.assert_allclose(tau_a, tau_b, atol=1e-12)
+
+    expected = dr_fwd_unit * 1.0 + dr_bwd_unit * 0.6
+    expected = expected / np.linalg.norm(expected)
+    np.testing.assert_allclose(tau_a, expected, atol=1e-12)
+
+
+def test_variable_springs_with_deep_intermediate():
+    """Deep intermediates must not distort variable spring ordering."""
+    energies = [0.0, 0.5, -1.0, 0.8, 0.1]
+    k = variable_spring_constants(energies, k_max=0.1, k_min=0.02)
+
+    assert np.all(k >= 0.02 - 1e-12)
+    assert np.all(k <= 0.1 + 1e-12)
+    assert np.argmax(k) in (2, 3)
+    assert k[1] <= k[2] + 1e-12
+
+
 # ---------------------------------------------------------------------------
 # MIC displacement tests
 # ---------------------------------------------------------------------------
 
 def test_mic_disp_nopbc_unchanged():
     """With pbc=False, _mic_disp must return dr unchanged."""
-    from nebwalk.forces import _mic_disp
     from ase.cell import Cell
+
+    from nebwalk.forces import _mic_disp
     dr   = np.array([[3.0, -1.5, 0.2]])
     cell = Cell([[5, 0, 0], [0, 5, 0], [0, 0, 5]])
     pbc  = [False, False, False]
@@ -279,8 +316,9 @@ def test_mic_disp_nopbc_unchanged():
 
 def test_mic_disp_wraps_correctly():
     """Atom displaced by 0.9*a should be wrapped to -0.1*a (shorter path)."""
-    from nebwalk.forces import _mic_disp
     from ase.cell import Cell
+
+    from nebwalk.forces import _mic_disp
     a    = 5.0
     cell = Cell([[a, 0, 0], [0, a, 0], [0, 0, a]])
     pbc  = [True, True, True]
@@ -294,8 +332,9 @@ def test_mic_disp_wraps_correctly():
 
 def test_mic_disp_partial_pbc():
     """With pbc=[True,True,False], only x and y are wrapped, not z."""
-    from nebwalk.forces import _mic_disp
     from ase.cell import Cell
+
+    from nebwalk.forces import _mic_disp
     a    = 4.0
     cell = Cell([[a, 0, 0], [0, a, 0], [0, 0, 20.0]])
     pbc  = [True, True, False]

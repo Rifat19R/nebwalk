@@ -18,8 +18,8 @@ Run:
 import numpy as np
 from ase import Atoms
 from ase.constraints import FixAtoms
-from nebwalk import NEB, linear_interpolate
 
+from nebwalk import NEB, linear_interpolate
 
 # ---------------------------------------------------------------------------
 # Morse potential parameters for H2
@@ -95,7 +95,7 @@ end.calc = MorsePairH3()
 
 print(f"Start energy : {start.get_potential_energy():.4f} eV")
 print(f"End   energy : {end.get_potential_energy():.4f} eV")
-print(f"Analytical TS barrier: ~0.19 eV  (at r_AB = r_BC = 1.25 Å)")
+print("Analytical TS barrier: ~0.19 eV  (at r_AB = r_BC = 1.25 Å)")
 
 # ---------------------------------------------------------------------------
 # NEB — with FixAtoms on HA and HC in every intermediate image

@@ -13,10 +13,12 @@
 #   python bench_parallel_mace.py
 
 import time
+
 import numpy as np
 import torch
 from ase.build import molecule
 from mace.calculators import mace_off
+
 from nebwalk import NEB, idpp_interpolate
 
 MODEL = "EGRET_1T.model"
@@ -44,7 +46,7 @@ def bench(n_workers, n_threads=None):
     times = []
     for rep in range(N_WARMUP + N_REPEATS):
         images = make_images()
-        neb = NEB(images, k=0.1, n_workers=n_workers)
+        NEB(images, k=0.1, n_workers=n_workers)
         t0 = time.perf_counter()
         # Single force evaluation step (not full optimization)
         for img in images[1:-1]:
