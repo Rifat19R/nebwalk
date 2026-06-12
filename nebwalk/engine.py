@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
 
 from ase import Atoms
@@ -71,6 +72,9 @@ def run_neb_calculation(
     calculator_factory: Callable[[], Any],
     config: NEBRunConfig | None = None,
     prepare_images: Callable[[list[Atoms]], None] | None = None,
+    *,
+    reproduce_dir: str | Path | None = None,
+    calc_params: dict[str, Any] | None = None,
 ) -> NEBRunResult:
     """Prepare, run, and summarize one NEB calculation."""
     cfg = config or NEBRunConfig()
@@ -92,10 +96,23 @@ def run_neb_calculation(
         max_steps=cfg.max_steps,
         verbose=cfg.verbose,
     )
-    return NEBRunResult(
+    result = NEBRunResult(
         neb=neb,
         converged=converged,
         barrier=neb.get_barrier(),
         reverse_barrier=neb.get_reverse_barrier(),
         reaction_energy=neb.get_reaction_energy(),
     )
+    if reproduce_dir is not None:
+        from .reproduce import save_bundle
+
+        save_bundle(
+            result,
+            initial,
+            final,
+            cfg,
+            output_dir=reproduce_dir,
+            calc_params=calc_params,
+        )
+        print(f"Reproducibility bundle saved to {reproduce_dir}")
+    return result
