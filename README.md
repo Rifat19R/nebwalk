@@ -534,5 +534,10 @@ python -c "import nebwalk; print(nebwalk.__version__ if hasattr(nebwalk, '__vers
 ---
 
 ## License
+## Acknowledgments
+
+The development of **nebwalk** benefited from selective AI-assisted support using **Claude** and **OpenAI Codex/ChatGPT** for code review, debugging guidance, documentation refinement, and release-workflow cleanup.
+
+The scientific direction, algorithmic design, implementation decisions, validation strategy, benchmark interpretation, and release responsibility remain fully maintained by **Md. Rifat Khandaker**. AI tools were used only as auxiliary development aids to improve clarity, review consistency, and workflow efficiency.
 
 MIT License. See [LICENSE](LICENSE).
