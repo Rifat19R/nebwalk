@@ -16,11 +16,11 @@ calculators, while remaining compatible with DFT backends through ASE.
 pip install nebwalk
 ```
 
-Current source version: **v0.6.0**.
+Current source version: **v0.7.0**.
 
 > Note for maintainers: if PyPI still shows an older release after pushing this
-> README, publish the v0.6.0 distribution with the commands in the release
-> section below. The source package metadata is already set to `0.6.0`.
+> README, publish the v0.7.0 distribution with the commands in the release
+> section below. The source package metadata is already set to `0.7.0`.
 
 ---
 
@@ -57,6 +57,16 @@ around ASE calculators and atomic structures.
 - Restart from ASE `.traj` files with fresh calculator instances.
 - Energy-profile plotting, CSV export, and `.traj` output.
 - Quantum ESPRESSO helper layer through ASE calculator construction.
+
+## Features in v0.7.0
+
+In addition to the v0.6.x NEB/CI-NEB engine, v0.7.0 adds:
+
+- MLIP-assisted NEB workflow through `run_mlip_assisted_neb()`.
+- Active-learning-ready image selection.
+- `peak_plus_neighbors` selection of the barrier-sensitive image and neighboring images.
+- Selected-image export as `.xyz`, `.traj`, and `.json`.
+- Clean handoff from MLIP/MACE NEB to DFT/QE refinement.
 
 ---
 
@@ -136,6 +146,41 @@ result.neb.save_trajectory("path.traj")
 
 The calculator factory must return a fresh calculator instance. Do not share one
 ASE calculator object across all images.
+
+---
+
+## MLIP-assisted NEB workflow
+
+`nebwalk` can now run a fast calculator/MLIP NEB first, identify the
+barrier-sensitive images, and export those images for higher-level DFT/QE
+refinement.
+
+This is an active-learning-ready workflow layer. It does not yet retrain the
+MLIP or perform uncertainty-guided selection automatically.
+
+```python
+from ase.calculators.emt import EMT
+from nebwalk import NEBRunConfig
+from nebwalk.active import MLIPActiveNEBConfig, run_mlip_assisted_neb
+
+result = run_mlip_assisted_neb(
+    initial=initial,
+    final=final,
+    mlip_calculator_factory=lambda: EMT(),  # replace with MACE/Egret/custom MLIP
+    neb_config=NEBRunConfig(n_images=7, interpolation="idpp", climb=True),
+    active_config=MLIPActiveNEBConfig(
+        selection_strategy="peak_plus_neighbors",
+        n_select=3,
+        output_dir="selected_for_qe",
+    ),
+)
+
+print(result.mlip_barrier)
+print(result.selected_indices)
+```
+
+The selected images are intended for DFT/QE refinement, single-point validation,
+or later active-learning labeling.
 
 ---
 
@@ -312,6 +357,7 @@ at the Ni(100) saddle-point geometry. Profile shape and convergence correct.
 
 ```bash
 python examples/morse_h3.py
+python examples/mlip_assisted_neb_emt.py
 python examples/al_diffusion_emt.py
 python examples/ethane_egret.py
 python examples/al_vacancy_macemp.py
@@ -425,11 +471,19 @@ image evaluation, restart helpers, and calculator-factory workflows.
 
 Short-term priorities:
 
-1. Keep PyPI, GitHub tags, and source metadata synchronized for v0.6.x releases.
+1. Keep PyPI, GitHub tags, and source metadata synchronized for v0.7.x releases.
 2. Add H/Cu(111) benchmark scripts, static output CSVs, and profile plots.
 3. Expand DFT-backed Quantum ESPRESSO benchmarks with small inputs and clear cost warnings.
 4. Add post-NEB transition-state refinement using a dimer method.
 5. Build a documentation site with theory, API usage, calculator setup, and benchmarks.
+
+Future active-learning roadmap:
+
+- uncertainty-guided image selection
+- DFT/MLIP hybrid barrier correction
+- adaptive image insertion/removal
+- automatic QE failed-image recovery
+- benchmark-grade reproducibility archives
 
 Long-term priorities:
 
@@ -451,7 +505,7 @@ rm -rf dist/ build/ *.egg-info
 python -m build
 python -m twine check dist/*
 python -m twine upload dist/*
-git tag -a v0.6.0 -m "nebwalk v0.6.0"
+git tag -a v0.7.0 -m "nebwalk v0.7.0"
 git push origin main --tags
 ```
 

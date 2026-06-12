@@ -6,6 +6,23 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.7.0] - MLIP-assisted NEB
+
+### Added
+- Added `nebwalk.active` with `run_mlip_assisted_neb()`.
+- Added `MLIPActiveNEBConfig`, `MLIPActiveNEBResult`, and `SelectedImage`.
+- Added `nebwalk.selection` with `peak_plus_neighbors` image selection.
+- Added selected-image export to `.xyz`, `.traj`, and `.json`.
+- Added examples for MLIP-assisted NEB using EMT and a MACE template.
+- Added tests for selection and active workflow exports.
+
+### Notes
+- This release introduces an active-learning-ready MLIP-assisted workflow.
+- It does not yet implement uncertainty-guided selection, automatic MLIP
+  retraining, adaptive image insertion/removal, or QE failed-image recovery.
+
+---
+
 ## [0.6.0] — 2026-06-10
 
 ### Added
