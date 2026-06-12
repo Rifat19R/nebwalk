@@ -456,6 +456,51 @@ See `examples/template_qe_neb.py` for a complete annotated template and
 
 ---
 
+## Reproducibility
+
+nebwalk can export a self-contained bundle for every NEB run. The bundle
+contains input structures, configuration, results, energy profile, trajectory,
+software environment, SHA-256 checksums, and a rerun template.
+
+**Via `run_neb_calculation`:**
+
+```python
+from nebwalk import run_neb_calculation, NEBRunConfig
+
+result = run_neb_calculation(
+    initial, final, calculator_factory,
+    config=NEBRunConfig(n_images=7, climb=True),
+    reproduce_dir="my_run_repro",
+    calc_params={"type": "MACE-MP-0", "model": "small", "device": "cpu"},
+)
+```
+
+**Directly:**
+
+```python
+from nebwalk import save_bundle
+
+bundle = save_bundle(
+    result, initial, final, config,
+    calc_params={"type": "EMT"},
+    compress=True,
+)
+print(bundle.tarball)   # Path to .tar.gz
+```
+
+**Verify a stored run:**
+
+```bash
+cd my_run_repro
+# Edit rerun_template.py to restore your calculator
+python rerun_template.py
+```
+
+The rerun script prints the original and recomputed barriers and flags
+differences larger than 5 meV.
+
+---
+
 ## Testing
 
 ```bash
@@ -463,9 +508,10 @@ pip install -e ".[test]"
 pytest tests/ -v
 ```
 
-The test suite (116 tests) covers interpolation, NEB force projection, tangent
+The test suite (132 tests) covers interpolation, NEB force projection, tangent
 construction, minimum-image convention handling, variable springs, parallel
-image evaluation, restart helpers, and calculator-factory workflows.
+image evaluation, restart helpers, calculator-factory workflows, and
+reproducibility bundles.
 
 ---
 

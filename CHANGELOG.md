@@ -6,6 +6,25 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.8.0] — 2026-06-13
+
+### Added
+- `nebwalk.reproduce` module: `save_bundle()` and `ReproBundle`.
+  Exports input structures, NEBRunConfig, results, energy profile, trajectory,
+  SHA-256 manifest, software environment, and a human-editable rerun template
+  into a self-contained directory and optional `.tar.gz`.
+- `run_neb_calculation()` accepts `reproduce_dir` and `calc_params` keyword
+  arguments for one-line reproducibility capture.
+- 16 new tests in `tests/test_reproduce.py`.
+- README: Reproducibility section with usage examples.
+
+### Notes
+- No new runtime dependencies. Reproducibility uses stdlib only.
+- Calculator factory code is intentionally not serialized. Provide `calc_params`
+  as a plain dict to document your calculator configuration.
+
+---
+
 ## [0.7.1] — 2026-06-12
 
 ### Fixed
