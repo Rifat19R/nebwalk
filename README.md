@@ -18,10 +18,6 @@ pip install nebwalk
 
 Current source version: **v0.7.0**.
 
-> Note for maintainers: if PyPI still shows an older release after pushing this
-> README, publish the v0.7.0 distribution with the commands in the release
-> section below. The source package metadata is already set to `0.7.0`.
-
 ---
 
 ## Why nebwalk?
@@ -312,31 +308,32 @@ so a lower static flat-terrace barrier is expected.
 
 ## Validated results
 
-14 systems validated across 4 calculators. Every error is attributed
-to the calculator, not the algorithm — reaction energy (endpoint ΔE)
-is verified near zero for all symmetric hops.
+> EMT is included for fast local testing only — no GPU, no download required.
+> For quantitative results use MACE-MP-0 or DFT (QE). Errors attributed to
+> the calculator are documented explicitly; convergence of the NEB path itself
+> is verified in every case by checking endpoint ΔE ≈ 0 for symmetric hops.
 
-| System | Calculator | Barrier | Reference | Error |
-|---|---|---|---|---|
-| Morse H3 collinear | Morse (analytical) | 0.200 eV | 0.193 eV (exact) | 4% |
-| Al adatom / Al(100) | EMT | 0.237 eV | ~0.40 eV (DFT-PBE) | finite-size slab |
-| Cu adatom / Cu(100) | EMT | 0.418 eV | ~0.40 eV (DFT-LDA/exp.) | 4.6% |
-| Ni adatom / Ni(100) | EMT | 0.555 eV | ~0.63 eV (DFT-GGA) | 12%§ |
-| Ethane C–C torsion | Egret-1t | 0.113 eV | 0.126 eV (exp.) | 10% |
-| Al vacancy / FCC Al | MACE-MP-0 | 0.508 eV | 0.61 eV (DFT-PBE) | 17%† |
-| Mg vacancy / HCP Mg | MACE-MP-0 | 0.508 eV | ~0.52 eV (DFT-PBE) | 2% |
-| Li vacancy / Li₂O | MACE-MP-0 | 0.284 eV | ~0.28 eV (DFT-GGA) | 1.4% |
-| Mg vacancy / MgO | MACE-MP-0 | 2.254 eV | ~2.20 eV (DFT-PBE) | 2.5% |
-| Cu vacancy / FCC Cu | EMT | 0.755 eV | ~0.70 eV (DFT-PBE) | 7.9% |
-| Ni vacancy / FCC Ni | EMT | 1.095 eV | ~1.04 eV (DFT-PBE) | 5.3% |
-| Pd vacancy / FCC Pd | EMT | 0.839 eV | ~0.91 eV (DFT-PBE) | 7.8% |
-| Ag vacancy / FCC Ag | EMT | 0.682 eV | ~0.66 eV (DFT-PBE) | 3.3% |
-| Cu adatom Cu(100)    | EMT                | 0.418 eV        | ~0.44 eV (DFT-PBE) | 4.6%             |
-| Ni adatom Ni(100)    | EMT                | 0.555 eV        | ~0.63 eV (DFT-PBE)  | 12%§             |
-| Li vacancy Li₂O  | MACE-MP-0          | 0.284 eV        | 0.28 eV (DFT-GGA)   | 1.4%             |
-| Mg vacancy MgO        | MACE-MP-0          | 2.254 eV        | ~2.2 eV (DFT-PBE)   | 2.5%             |
-| H/Cu(111)            | MACE-MP-0          | 0.126 eV        | ~0.15 eV (DFT-PBE) | ~16%¶           |
-| Pt vacancy / FCC Pt | EMT | 0.971 eV | ~1.49 eV (DFT-PBE) | 34.8%‡ |
+17 systems validated across 4 calculators.
+
+| System | Calculator | Purpose | Barrier | Reference | Error |
+|---|---|---|---|---|---|
+| Morse H3 collinear | Morse (analytical) | algorithm test | 0.200 eV | 0.193 eV (exact) | 4% |
+| Al adatom / Al(100) | EMT | speed test | 0.237 eV | ~0.40 eV (DFT-PBE) | finite-size slab |
+| Cu adatom / Cu(100) | EMT | speed test | 0.418 eV | ~0.44 eV (DFT-PBE) | 4.6% |
+| Ni adatom / Ni(100) | EMT | speed test | 0.555 eV | ~0.63 eV (DFT-GGA) | 12%§ |
+| Ethane C–C torsion | Egret-1t | ML organic | 0.113 eV | 0.126 eV (exp.) | 10% |
+| Al vacancy / FCC Al | MACE-MP-0 | benchmark | 0.508 eV | 0.61 eV (DFT-PBE) | 17%† |
+| Mg vacancy / HCP Mg | MACE-MP-0 | benchmark | 0.508 eV | ~0.52 eV (DFT-PBE) | 2% |
+| Li vacancy / Li₂O | MACE-MP-0 | benchmark | 0.284 eV | ~0.28 eV (DFT-GGA) | 1.4% |
+| Mg vacancy / MgO | MACE-MP-0 | benchmark | 2.254 eV | ~2.20 eV (DFT-PBE) | 2.5% |
+| H diffusion / Cu(111) | MACE-MP-0 | benchmark | 0.126 eV | ~0.15 eV (DFT-PBE) | ~16%¶ |
+| Cu vacancy / FCC Cu | EMT | speed test | 0.755 eV | ~0.70 eV (DFT-PBE) | 7.9% |
+| Ni vacancy / FCC Ni | EMT | speed test | 1.095 eV | ~1.04 eV (DFT-PBE) | 5.3% |
+| Pd vacancy / FCC Pd | EMT | speed test | 0.839 eV | ~0.91 eV (DFT-PBE) | 7.8% |
+| Ag vacancy / FCC Ag | EMT | speed test | 0.682 eV | ~0.66 eV (DFT-PBE) | 3.3% |
+| Pt vacancy / FCC Pt | EMT | speed test | 0.971 eV | ~1.49 eV (DFT-PBE) | 34.8%‡ |
+| Au vacancy / FCC Au | EMT | speed test | 0.590 eV | ~0.68 eV (DFT-PBE) | 13.3% |
+| Au vacancy / FCC Au | MACE-MP-0 | benchmark | 0.725 eV | ~0.68 eV (DFT-PBE) | 6.7% |
 
 † MACE-MP-0 systematically underestimates vacancy migration barriers by
 10–20%. Known model limitation, not a nebwalk bug.
@@ -344,12 +341,11 @@ is verified near zero for all symmetric hops.
 ‡ EMT does not capture relativistic effects in Pt. NEB converged cleanly
 in 60 steps — error is from the calculator.
 
-§ Ni adatom on Ni(100): 12% vs DFT-PBE. Reflects EMT surface-energy anisotropy; NEB converged cleanly.
-
-¶ H/Cu(111): surface diffusion benchmark. Error reflects MACE-MP-0 surface accuracy limitations, not a library bug.
-
-§ EMT underestimates Ni adatom barriers due to strong d-band character
+§ Ni adatom on Ni(100): EMT underestimates barriers due to d-band character
 at the Ni(100) saddle-point geometry. Profile shape and convergence correct.
+
+¶ H/Cu(111): surface diffusion benchmark. Error reflects MACE-MP-0 surface
+accuracy limitations, not a library bug.
 
 ---
 
