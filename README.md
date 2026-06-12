@@ -376,7 +376,7 @@ script's explicit clean flag:
 ```bash
 export ESPRESSO_PSEUDO=$HOME/pseudo
 export AL_PSEUDO=Al.pbe-n-kjpaw_psl.1.0.0.UPF
-export ESPRESSO_COMMAND="pw.x"
+export ESPRESSO_COMMAND="/absolute/path/to/pw.x"
 export NEBWALK_QE_CLEAN=1
 python examples/al_vacancy_qe.py
 tail -f al_vacancy_qe.log
@@ -413,7 +413,7 @@ validate_qe_setup(
     pseudo_dir       = "/path/to/pseudo",
     pseudopotentials = {"Fe": "Fe.pbe-spn-kjpaw_psl.1.0.0.UPF",
                         "N":  "N.pbe-n-radius_5.UPF"},
-    command          = "pw.x",
+    command          = "/absolute/path/to/pw.x",
 )
 
 # Each image gets an independent subdirectory — prevents wavefunction conflicts
@@ -423,7 +423,7 @@ factory = make_qe_factory(
     pseudopotentials = {"Fe": "Fe.pbe-spn-kjpaw_psl.1.0.0.UPF",
                         "N":  "N.pbe-n-radius_5.UPF"},
     base_dir         = "neb_qe_workdir",
-    command          = "pw.x",   # or "mpirun -np 4 pw.x"
+    command          = "/absolute/path/to/pw.x",   # or "mpirun -np 4 /absolute/path/to/pw.x"
 )
 
 result = run_neb_calculation(
@@ -446,7 +446,9 @@ print(f"Barrier: {result.barrier:.3f} eV")
 | `starting_magnetization` | None | Dict of {species_index: value}. Required when nspin=2. |
 | `conv_thr` | 1e-8 | SCF convergence threshold (Ry). Tight convergence reduces NEB force noise. |
 
-**Requirements:** Quantum ESPRESSO ≥ 6.8, `pw.x` in PATH, UPF pseudopotential files.
+**Requirements:** Quantum ESPRESSO ≥ 6.8, a working `pw.x` executable, and UPF
+pseudopotential files. Prefer an absolute `pw.x` path in scripted runs so ASE
+subprocesses do not depend on an interactive-shell `PATH`.
 Recommended set: [SSSP Efficiency](https://www.materialscloud.org/discover/sssp) (PBE).
 
 See `examples/template_qe_neb.py` for a complete annotated template and
@@ -505,8 +507,9 @@ rm -rf dist/ build/ *.egg-info
 python -m build
 python -m twine check dist/*
 python -m twine upload dist/*
-git tag -a v0.7.0 -m "nebwalk v0.7.0"
-git push origin main --tags
+VERSION=v0.7.1
+git tag -a "$VERSION" -m "nebwalk $VERSION"
+git push origin main "$VERSION"
 ```
 
 After release:

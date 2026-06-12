@@ -21,6 +21,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Example benchmark runner now defaults to the full suite, avoids duplicate
   safe-mode runs, documents all QE pseudopotentials, uses `np=4` with Open MPI
   oversubscription for WSL, and cleans stale QE workdirs before QE reruns.
+- QE example runner now preserves a user-provided `ESPRESSO_COMMAND` and falls
+  back to an absolute `pw.x` path, avoiding PATH-dependent failures in ASE
+  subprocesses.
 
 ### Docs
 - Tangent fix may shift converged barriers slightly for paths with uneven image
