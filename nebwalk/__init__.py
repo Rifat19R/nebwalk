@@ -15,6 +15,7 @@ from .interpolate import geodesic_interpolate, idpp_interpolate, linear_interpol
 from .neb import NEB
 from .output import plot_energy_profile, save_csv, save_trajectory
 from .qe import QEParams, make_qe_factory, validate_qe_setup
+from .reproduce import ReproBundle, save_bundle
 from .selection import select_images, select_peak_plus_neighbors
 
 __version__ = "0.7.1"
@@ -42,4 +43,6 @@ __all__ = [
     "QEParams",
     "make_qe_factory",
     "validate_qe_setup",
+    "ReproBundle",
+    "save_bundle",
 ]
