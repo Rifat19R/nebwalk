@@ -14,12 +14,17 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   at extremum images.
 - Variable spring constants now reference the global path minimum, preserving
   spring ordering when intermediates lie below both endpoints.
-- CUDA-backed calculators are forced to serial image evaluation with a warning
-  because thread-based CUDA force evaluation can silently corrupt results.
+- CUDA-backed calculators now emit a warning when used with thread-parallel
+  image evaluation because CUDA force evaluation from multiple Python threads
+  can silently corrupt results.
 - Exported selected-images README now reports the actual selection strategy.
 - Example benchmark runner now defaults to the full suite, avoids duplicate
   safe-mode runs, documents all QE pseudopotentials, uses `np=4` with Open MPI
   oversubscription for WSL, and cleans stale QE workdirs before QE reruns.
+
+### Docs
+- Tangent fix may shift converged barriers slightly for paths with uneven image
+  spacing. Benchmark table values will be re-validated in a follow-up run.
 
 ---
 

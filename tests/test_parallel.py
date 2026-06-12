@@ -18,7 +18,7 @@ from ase.build import bulk
 from ase.calculators.emt import EMT
 
 from nebwalk import NEB, idpp_interpolate
-from nebwalk.optimize import _calculator_uses_cuda, _eval_all, fire_optimize
+from nebwalk.optimize import _eval_all, _warn_if_gpu_calculator, fire_optimize
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -48,8 +48,12 @@ def _al_images(n_images=5):
 # _eval_all correctness
 # ---------------------------------------------------------------------------
 
-def test_calculator_uses_cuda_detects_device_string():
-    """CUDA calculator detection should work without importing heavy models."""
+def test_warn_if_gpu_calculator(caplog):
+    """CUDA calculators with n_workers > 1 must emit a safety warning."""
+
+    class FakeImage:
+        def __init__(self, calc):
+            self.calc = calc
 
     class FakeCudaCalc:
         device = "cuda:0"
@@ -57,8 +61,21 @@ def test_calculator_uses_cuda_detects_device_string():
     class FakeCpuCalc:
         device = "cpu"
 
-    assert _calculator_uses_cuda(FakeCudaCalc()) is True
-    assert _calculator_uses_cuda(FakeCpuCalc()) is False
+    class FakeCalcWithoutDevice:
+        pass
+
+    with caplog.at_level("WARNING", logger="nebwalk.optimize"):
+        _warn_if_gpu_calculator([FakeImage(FakeCudaCalc())], n_workers=2)
+
+    assert "Thread-parallel evaluation is NOT safe" in caplog.text
+
+    caplog.clear()
+    with caplog.at_level("WARNING", logger="nebwalk.optimize"):
+        _warn_if_gpu_calculator([FakeImage(FakeCpuCalc())], n_workers=2)
+        _warn_if_gpu_calculator([FakeImage(FakeCalcWithoutDevice())], n_workers=2)
+        _warn_if_gpu_calculator([FakeImage(FakeCudaCalc())], n_workers=1)
+
+    assert caplog.text == ""
 
 
 class TestEvalAll:

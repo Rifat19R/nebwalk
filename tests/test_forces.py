@@ -290,12 +290,21 @@ def test_improved_tangent_bisection_uses_unit_vectors():
 def test_variable_springs_with_deep_intermediate():
     """Deep intermediates must not distort variable spring ordering."""
     energies = [0.0, 0.5, -1.0, 0.8, 0.1]
-    k = variable_spring_constants(energies, k_max=0.1, k_min=0.02)
+    k = variable_spring_constants(energies, k_max=0.5, k_min=0.1)
 
-    assert np.all(k >= 0.02 - 1e-12)
-    assert np.all(k <= 0.1 + 1e-12)
-    assert np.argmax(k) in (2, 3)
-    assert k[1] <= k[2] + 1e-12
+    assert np.all(k >= 0.1 - 1e-12)
+    assert np.all(k <= 0.5 + 1e-12)
+    assert k[2] == pytest.approx(0.5)
+    assert k[0] == pytest.approx(k.min())
+    assert k[1] == pytest.approx(k.min())
+
+
+def test_variable_springs_monotonic_path_matches_hand_computed_values():
+    """Monotonic paths preserve the endpoint-minimum formula behavior."""
+    energies = [0.0, 0.3, 0.6, 1.0]
+    k = variable_spring_constants(energies, k_max=0.5, k_min=0.1)
+
+    np.testing.assert_allclose(k, [0.22, 0.34, 0.5], atol=1e-12)
 
 
 # ---------------------------------------------------------------------------

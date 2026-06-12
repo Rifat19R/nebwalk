@@ -16,7 +16,7 @@ calculators, while remaining compatible with DFT backends through ASE.
 pip install nebwalk
 ```
 
-Current source version: **v0.7.0**.
+Current source version: **v0.7.1**.
 
 ---
 
@@ -49,8 +49,11 @@ around ASE calculators and atomic structures.
 - Minimum-image-convention-aware interpolation and NEB forces for periodic systems.
 - Variable spring constants to concentrate images near high-energy regions.
 - High-level `run_neb_calculation()` API with calculator factories.
-- Thread-based parallel image evaluation for CPU calculators; CUDA calculators
-  are automatically forced to serial evaluation.
+- Thread-based parallel image evaluation for CPU calculators.
+- **GPU note:** thread-parallel image evaluation (`n_workers > 1`) is only safe
+  with CPU calculators. With CUDA-backed calculators (MACE-MP-0 or Egret-1t on
+  GPU), use `n_workers=1`. GPU parallelism across images requires per-image
+  CUDA streams or process isolation, which is out of scope for nebwalk.
 - Restart from ASE `.traj` files with fresh calculator instances.
 - Energy-profile plotting, CSV export, and `.traj` output.
 - Quantum ESPRESSO helper layer through ASE calculator construction.
@@ -458,7 +461,7 @@ pip install -e ".[test]"
 pytest tests/ -v
 ```
 
-The test suite (115 tests) covers interpolation, NEB force projection, tangent
+The test suite (116 tests) covers interpolation, NEB force projection, tangent
 construction, minimum-image convention handling, variable springs, parallel
 image evaluation, restart helpers, and calculator-factory workflows.
 

@@ -19,7 +19,7 @@ class NEB:
     """Nudged Elastic Band path optimizer.
 
     Thread-based parallel image evaluation is intended for CPU calculators.
-    CUDA-backed calculators are automatically forced to serial evaluation.
+    Use serial evaluation (n_workers=1) for CUDA-backed calculators.
     """
 
     def __init__(
