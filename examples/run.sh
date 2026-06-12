@@ -39,15 +39,12 @@ run_mace() {
   run examples/ni_vacancy_mace.py
   run examples/pd_vacancy_mace.py
   run examples/au_vacancy_macemp.py
-  run examples/w_vacancy_mace.py
-  run examples/mo_vacancy_mace.py
-  run examples/si_vacancy_mace.py
 }
 
 run_dry() {
   for item in \
     al:emt cu:emt ag:emt ni:emt pd:emt au:emt \
-    al:mace cu:mace ag:mace ni:mace pd:mace au:mace w:mace mo:mace si:mace \
+    al:mace cu:mace ag:mace ni:mace pd:mace au:mace \
     al:qe cu:qe ag:qe w:qe mo:qe si:qe
   do
     material="${item%%:*}"
@@ -79,6 +76,21 @@ run_qe() {
   run examples/si_vacancy_qe.py
 }
 
+run_qe_targets() {
+  export NEBWALK_RUN_QE=1
+  export ESPRESSO_PSEUDO=/mnt/d/Rifat_kh/SSSP_1.3.0_PBE_efficiency
+  export ESPRESSO_COMMAND="mpirun --oversubscribe -np 4 pw.x"
+  export NEBWALK_QE_CLEAN=1
+
+  export W_PSEUDO=W_pbe_v1.2.uspp.F.UPF
+  export MO_PSEUDO=Mo_ONCV_PBE-1.0.oncvpsp.upf
+  export SI_PSEUDO=Si.pbe-n-rrkjus_psl.1.0.0.UPF
+
+  run examples/w_vacancy_qe.py
+  run examples/mo_vacancy_qe.py
+  run examples/si_vacancy_qe.py
+}
+
 run_all_local() {
   run_safe
   run examples/al_vacancy_emt.py
@@ -91,9 +103,6 @@ run_all_local() {
   run examples/ag_vacancy_mace.py
   run examples/ni_vacancy_mace.py
   run examples/pd_vacancy_mace.py
-  run examples/w_vacancy_mace.py
-  run examples/mo_vacancy_mace.py
-  run examples/si_vacancy_mace.py
 }
 
 case "${MODE}" in
@@ -112,6 +121,9 @@ case "${MODE}" in
   qe)
     run_qe
     ;;
+  qe-targets)
+    run_qe_targets
+    ;;
   all)
     run_all_local
     ;;
@@ -120,8 +132,9 @@ case "${MODE}" in
     run_qe
     ;;
   *)
-    echo "Usage: bash run.sh [all|safe|dry|emt|mace|qe|full]" >&2
+    echo "Usage: bash run.sh [all|safe|dry|emt|mace|qe|qe-targets|full]" >&2
     echo "  all : local validation only (safe + EMT + MACE), no QE" >&2
+    echo "  qe-targets: real QE for W/Mo/Si vacancy tests" >&2
     echo "  full: local validation plus real QE calculations" >&2
     exit 2
     ;;
