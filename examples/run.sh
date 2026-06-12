@@ -58,7 +58,8 @@ run_dry() {
 run_qe() {
   export NEBWALK_RUN_QE=1
   export ESPRESSO_PSEUDO=/mnt/d/Rifat_kh/SSSP_1.3.0_PBE_efficiency
-  export ESPRESSO_COMMAND="mpirun --oversubscribe -np 4 pw.x"
+  : "${ESPRESSO_COMMAND:=mpirun --oversubscribe -np 4 /home/duets/q-e-qe-7.4.1/bin/pw.x}"
+  export ESPRESSO_COMMAND
   export NEBWALK_QE_CLEAN=1
 
   export AL_PSEUDO=Al.pbe-n-kjpaw_psl.1.0.0.UPF
@@ -87,7 +88,8 @@ run_qe() {
 run_qe_targets() {
   export NEBWALK_RUN_QE=1
   export ESPRESSO_PSEUDO=/mnt/d/Rifat_kh/SSSP_1.3.0_PBE_efficiency
-  export ESPRESSO_COMMAND="mpirun --oversubscribe -np 4 pw.x"
+  : "${ESPRESSO_COMMAND:=mpirun --oversubscribe -np 4 /home/duets/q-e-qe-7.4.1/bin/pw.x}"
+  export ESPRESSO_COMMAND
   export NEBWALK_QE_CLEAN=1
 
   export W_PSEUDO=W_pbe_v1.2.uspp.F.UPF
@@ -102,7 +104,8 @@ run_qe_targets() {
 run_qe_extended() {
   export NEBWALK_RUN_QE=1
   export ESPRESSO_PSEUDO=/mnt/d/Rifat_kh/SSSP_1.3.0_PBE_efficiency
-  export ESPRESSO_COMMAND="mpirun --oversubscribe -np 4 pw.x"
+  : "${ESPRESSO_COMMAND:=mpirun --oversubscribe -np 4 /home/duets/q-e-qe-7.4.1/bin/pw.x}"
+  export ESPRESSO_COMMAND
   export NEBWALK_QE_CLEAN=1
 
   export CU_PSEUDO=Cu.paw.z_11.ld1.psl.v1.0.0-low.upf
