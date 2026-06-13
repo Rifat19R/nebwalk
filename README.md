@@ -373,6 +373,8 @@ python examples/al_diffusion_qe.py
 python examples/al_vacancy_qe.py
 ```
 
+A larger benchmark suite (38 systems, EMT/MACE/Egret) is available in `examples/v8/`.
+
 For a clean Al vacancy QE rerun, remove stale partial QE outputs through the
 script's explicit clean flag:
 
