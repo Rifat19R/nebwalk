@@ -39,7 +39,7 @@ around ASE calculators and atomic structures.
 
 ---
 
-## Features in v0.6.0
+## Features
 
 - Standard NEB and **climbing-image NEB (CI-NEB)**.
 - Improved tangent estimate following Henkelman and Jónsson.
@@ -58,7 +58,7 @@ around ASE calculators and atomic structures.
 - Energy-profile plotting, CSV export, and `.traj` output.
 - Quantum ESPRESSO helper layer through ASE calculator construction.
 
-## Features in v0.7.0
+### MLIP-assisted workflow (v0.7.0+)
 
 In addition to the v0.6.x NEB/CI-NEB engine, v0.7.0 adds:
 
