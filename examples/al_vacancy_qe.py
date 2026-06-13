@@ -31,7 +31,7 @@ from ase.optimize import BFGS
 from nebwalk import NEB, idpp_interpolate
 from nebwalk.qe import QEParams, make_qe_factory, validate_qe_setup
 
-PSEUDO_DIR = Path(os.environ.get("ESPRESSO_PSEUDO", Path.home() / "pseudo"))
+PSEUDO_DIR = Path(os.environ["ESPRESSO_PSEUDO"]).expanduser()
 PSEUDO = {"Al": os.environ.get("AL_PSEUDO", "Al.pbe-n-kjpaw_psl.1.0.0.UPF")}
 QE_COMMAND = os.environ.get("ESPRESSO_COMMAND", "pw.x")
 WORKDIR = Path("al_vacancy_qe_workdir")
@@ -46,7 +46,7 @@ PARAMS = QEParams(
     occupations="smearing",
     smearing="marzari-vanderbilt",
     degauss=0.02,
-    conv_thr=1.0e-8,
+    conv_thr=1.0e-6,
     mixing_beta=0.3,
     extra_system={"input_dft": "PBE"},
 )
