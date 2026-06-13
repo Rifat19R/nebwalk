@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nebwalk"
 version = "0.8.0"
-description = "Minimal Nudged Elastic Band (NEB) implementation for ASE-compatible calculators"
+description = "Calculator-agnostic nudged elastic band library with MLIP-assisted barrier pre-screening and DFT validation workflows"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
