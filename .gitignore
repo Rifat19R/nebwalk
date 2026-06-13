@@ -64,6 +64,9 @@ Thumbs.db
 # Benchmark raw outputs (keep only curated results/)
 benchmarks/**/raw/
 benchmarks/**/*.traj
+
+# v0.8 reproducibility benchmark outputs
+examples/v8_outputs/
 benchmarks/**/*.vasp
 benchmarks/**/*.log
 
