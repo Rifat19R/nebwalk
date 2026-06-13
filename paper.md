@@ -136,7 +136,7 @@ It is distributed on PyPI and tested continuously via GitHub Actions.
 
 # Validation
 
-Seventeen systems across four calculator backends have been checked against
+Nineteen validated system-calculator combinations across four backends have been checked against
 DFT-PBE or experimental reference values. A representative selection is
 shown below. Where errors are large — Pt vacancy with EMT (34.8%), Al
 vacancy with MACE-MP-0 (17%) — these reflect documented limitations of the
