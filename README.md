@@ -317,7 +317,7 @@ so a lower static flat-terrace barrier is expected.
 > the calculator are documented explicitly; convergence of the NEB path itself
 > is verified in every case by checking endpoint ΔE ≈ 0 for symmetric hops.
 
-17 systems validated across 4 calculators.
+20 systems validated across 4 calculators.
 
 | System | Calculator | Purpose | Barrier | Reference | Error |
 |---|---|---|---|---|---|
@@ -338,6 +338,9 @@ so a lower static flat-terrace barrier is expected.
 | Pt vacancy / FCC Pt | EMT | speed test | 0.971 eV | ~1.49 eV (DFT-PBE) | 34.8%‡ |
 | Au vacancy / FCC Au | EMT | speed test | 0.590 eV | ~0.68 eV (DFT-PBE) | 13.3% |
 | Au vacancy / FCC Au | MACE-MP-0 | benchmark | 0.725 eV | ~0.68 eV (DFT-PBE) | 6.7% |
+| Al vacancy / FCC Al | QE/PBE     | benchmark | 0.564 eV | ~0.61 eV (DFT-PBE) | 7.6% |
+| W vacancy / BCC W   | QE/PBE     | benchmark | 1.561 eV | ~1.66 eV (DFT-PBE) | 5.9% |
+| Mo vacancy / BCC Mo | QE/PBE     | benchmark | 1.281 eV | ~1.35 eV (DFT-PBE) | 5.1% |
 
 † MACE-MP-0 systematically underestimates vacancy migration barriers by
 10–20%. Known model limitation, not a nebwalk bug.
