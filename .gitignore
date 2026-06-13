@@ -84,6 +84,4 @@ tests.yml
 
 # BCC Li — MACE-MP-0 domain failure, excluded from validated examples
 examples/li_vacancy_macemp.py
-examples/v8_*.py
-examples/run_v8.sh
-examples/repro_v8_benchmark_suite.py
+examples/v8/
