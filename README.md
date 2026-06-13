@@ -593,3 +593,14 @@ The scientific direction, algorithmic design, implementation decisions, validati
 ## License
 
 MIT License. See [LICENSE](LICENSE).
+
+## Features in v0.8.0
+
+In addition to the v0.7.x engine and MLIP workflow, v0.8.0 adds:
+
+- Reproducibility bundles via `nebwalk.reproduce.save_bundle()`.
+- Self-contained output directory: input structures, NEBRunConfig, results,
+  trajectory, pip environment capture, SHA-256 checksums, and a rerun script.
+- Optional `.tar.gz` archive of the full bundle.
+- `run_neb_calculation()` accepts `reproduce_dir` and `calc_params` keyword
+  arguments for one-line bundle creation.
